@@ -1,0 +1,92 @@
+- term: Atomic steps
+  def: "Breaking a task into explicit, ordered sub-tasks that are completed one at a time. A core principle: AI should not be asked to 'do everything at once' — each step has a defined input, output, and verification point."
+  related: [Reasoning trace, Skill file]
+  tags: [principle]
+
+- term: Audit log
+  def: "A record of every transformation or decision made during a pipeline run, with one row per action. Includes: what changed, what it changed from, and why. The audit log is a first-class output — not an afterthought."
+  related: [Pipeline, Skill file]
+  tags: [pipeline]
+
+- term: Codebook
+  def: "A pre-defined set of theme names and their one-line definitions, used in thematic analysis. AI codes documents against the codebook — it never generates theme names. The codebook is authored by the researcher before any AI work begins."
+  related: [Thematic analysis, Controlled vocabulary]
+  tags: [analysis]
+
+- term: Confidence field
+  def: "A field in AI output that labels how certain the AI is about each item: typically direct_quote / paraphrase / inferred. Items labelled 'inferred' require mandatory human review before entering the final output."
+  related: [Reasoning trace, Human review]
+  tags: [principle]
+
+- term: Controlled vocabulary
+  def: "A fixed set of valid values for a field — categories, tags, labels, status codes. AI must choose from the vocabulary; it may not invent new terms. The vocabulary is defined before AI runs, and validation rejects any unknown term at write time."
+  related: [Codebook, Validation]
+  tags: [pipeline]
+
+- term: Claude Code
+  def: "An agentic coding tool from Anthropic that runs in your terminal. It can read and write files, execute code, and run multi-step workflows. Suitable for pipeline skill files that process batches of documents or generate and execute scripts."
+  related: [Gemini CLI, Skill file]
+  tags: [tool]
+
+- term: Gemini CLI
+  def: "Google's open-source agentic terminal tool, analogous to Claude Code. Skill files from this site are compatible with both Claude Code and Gemini CLI — the same skill file works with either tool."
+  related: [Claude Code, Skill file]
+  tags: [tool]
+
+- term: Human review
+  def: "The fifth principle: designing how a human will verify the result before running anything. Human review is not a final check — it is designed into the process, with mandatory gates at specific points (e.g. before a script runs, before synthesis begins)."
+  related: [Review gate, Confidence field]
+  tags: [principle]
+
+- term: Objective
+  def: "The first principle: defining what success looks like in concrete, checkable terms before touching AI. Not 'summarise this document' but 'extract all commitments naming a specific actor, obligation, and timeframe — with the paragraph reference for each.'"
+  related: [Output shape, Atomic steps]
+  tags: [principle]
+
+- term: Output shape
+  def: "The second principle: specifying the structure, format, and fields of the result before asking AI to produce it. A table with fixed columns, a JSON schema, or a numbered list with named fields. Without a specified shape, AI produces narrative summaries that are hard to verify."
+  related: [Objective, Controlled vocabulary]
+  tags: [principle]
+
+- term: Pipeline
+  def: "A multi-stage automated process where the output of each step becomes the input of the next. Pipeline cases on this site use skill files to automate the sequence — batching, validation, and audit logging included."
+  related: [Skill file, Audit log]
+  tags: [pipeline]
+
+- term: Prompt
+  def: "A structured text template that applies the 5 principles to a specific task. Each case study provides a prompt with [PLACEHOLDER] slots. It can be used in a chat window or saved as the base instruction for a custom chatbot."
+  related: [Skill file, Custom chatbot]
+  tags: [artifact]
+
+- term: Reasoning trace
+  def: "The fourth principle: requiring AI to show its assumptions and interpretive choices at each step — not just its output. Implemented via a note field, a confidence field, or inline comments in generated code. Without a trace, a reviewer sees only the conclusion, not the reasoning."
+  related: [Confidence field, Human review]
+  tags: [principle]
+
+- term: Review gate
+  def: "A defined checkpoint in a pipeline where a human must verify output before the process continues. Mandatory gates block the pipeline until the human signs off. Advisory gates recommend review but do not block. Auto-validated gates run checks deterministically."
+  related: [Human review, Pipeline]
+  tags: [pipeline]
+
+- term: School of Data pipeline
+  def: "A seven-stage methodology for data work: Define (clarify the question and scope), Find (identify data sources), Get (acquire the data), Verify (check quality and provenance), Clean (standardise and resolve inconsistencies), Analyse (extract meaning), Present (communicate findings). Used throughout this site to locate where in the data journey each case study applies."
+  related: [Pipeline, Audit log]
+  tags: [methodology]
+  link:
+    url: https://civicliteraci.es/data-pipeline/
+    label: "Full guide on the CLi website →"
+
+- term: Skill file
+  def: "A structured Markdown instruction file that defines a multi-step AI workflow. Downloaded from a case study and run with Claude Code, Claude.ai, or Gemini CLI. Contains the operating procedure, review gates, output specifications, and tool invocations for a complete pipeline task."
+  related: [Claude Code, Gemini CLI, Pipeline]
+  tags: [artifact]
+
+- term: System prompt
+  def: "A persistent instruction set that is sent to an AI model before every conversation. Used when setting up a custom chatbot: the case study prompt becomes the system prompt, so you don't need to paste it each time."
+  related: [Prompt, Custom chatbot]
+  tags: [tool]
+
+- term: Validation
+  def: "An automated check that runs after AI produces output, verifying it meets defined constraints: required fields are present, values are from the controlled vocabulary, references are non-empty. Validation rejects bad output immediately — it does not wait for a human to notice."
+  related: [Controlled vocabulary, Review gate]
+  tags: [pipeline]

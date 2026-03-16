@@ -1,0 +1,89 @@
+id: search-datasets
+title: Searching for Civic Datasets
+shortDesc: Formulate targeted search strategies to find relevant datasets from government portals, international databases and open data repositories.
+context: Finding the right dataset is often the hardest part of civic data work. Government portals have inconsistent metadata, international databases use different terminologies, and relevant data hides in unexpected formats. AI can generate vocabulary and map the source landscape — but it cannot verify what it finds.
+mode: prompt-guided
+pipelineTags: [define, find]
+topicTags: [open data, research, government portals]
+material: datasets to locate
+hasSkill: false
+
+risks:
+  - risk:
+      title: Confidently cited non-existent datasets
+      body: "AI names a dataset that doesn't exist, or exists but lacks the claimed variables — with the same tone as real sources."
+    good:
+      title: Every cited source manually verified
+      body: AI-suggested sources are candidates. Every dataset in the source inventory must be accessed and assessed before it can be cited.
+  - risk:
+      title: Training-data ceiling
+      body: "AI's source map is bounded by its training data — missing recent datasets, non-English portals, smaller national bodies."
+    good:
+      title: AI generates vocabulary, humans search
+      body: AI produces search terms and a source landscape. Humans execute the searches, reaching portals and FOI registers AI cannot access.
+  - risk:
+      title: Vague specification, vague results
+      body: "'Find data on extractives' returns well-known databases that may not match the specific unit, geography, or period needed."
+    good:
+      title: Researcher writes the specification first
+      body: "The data specification — unit, geography, period, essential variables — is written before AI is involved."
+  - risk:
+      title: AI doesn't flag what it doesn't know
+      body: AI suggests the closest plausible thing rather than stating it doesn't know of a matching dataset.
+    good:
+      title: Gaps are a required output
+      body: AI must explicitly name which aspects of the specification are unlikely to be covered by any public dataset.
+
+principles:
+  - name: Objective
+    tag: A data specification, not a topic
+    body: "Not 'find data about mining' but 'company-level data on extractive sector revenues paid to sub-national governments in Ghana, 2015–2023, disaggregated by tax type.' Without this, AI cannot tell you what it does and does not know."
+    ex1:
+      lbl: Specification template
+      txt: "Unit: company-payment records (not aggregate)\nGeography: Ghana, sub-national\nPeriod: 2015–2023\nEssential: company, amount, payment type, recipient government\nNice-to-have: project name, commodity"
+
+  - name: Output shape
+    tag: A source inventory table — not a list of suggestions
+    body: The output is a source inventory table with fixed columns. AI-suggested sources are candidates — they enter the table only after human verification.
+    ex1:
+      lbl: Source inventory columns
+      txt: "name | url | coverage | granularity | last_updated | license | limitations | verified_by | verified_date"
+    warn: AI-suggested sources that have not been manually accessed cannot appear in the source inventory.
+
+  - name: Atomic steps
+    tag: Vocabulary first, landscape second, search third
+    body: "Three separate steps. First: AI generates search vocabulary. Second: AI maps the source landscape. Third — the human step — execute the searches and assess what you find. Do not combine these steps."
+    ex1:
+      lbl: Step sequence
+      txt: "1. AI generates vocabulary (15–20 terms)\n2. AI produces source landscape\n3. Human executes searches using vocabulary\n4. Human assesses each result against specification\n5. Human builds source inventory"
+
+  - name: Reasoning trace
+    tag: AI must explain why each source is or is not relevant
+    body: When AI produces its source landscape, ask it to explain why each source is likely to hold your target data and to flag sources where it is uncertain. These explanations are your audit trail for the search strategy.
+    ex1:
+      lbl: Landscape entry format
+      txt: "Source: EITI International Secretariat\nURL: eiti.org/data\nRationale: Publishes EITI reports containing company-level payment data.\nUncertainty: Sub-national disaggregation varies by country."
+
+  - name: Human review
+    tag: Every cited dataset manually verified
+    body: Visit the URL. Look at the actual data. Confirm coverage dates, granularity, and that essential variables are present. An AI-suggested dataset not manually accessed cannot be cited.
+    warn: It is faster to verify 10 sources carefully than to cite 20 and discover later that half do not contain what you needed.
+
+prompt: |
+  You are a research librarian specialising in civic and government data.
+
+  # Data specification (analyst-provided — do not modify)
+  [PASTE YOUR SPECIFICATION]
+
+  # Step 1 — VOCABULARY
+  List 15–20 search terms: official terminology, synonyms, acronyms in [LANGUAGE(S)].
+  For each: one sentence on why it is relevant.
+
+  # Step 2 — SOURCE LANDSCAPE
+  List likely data holders: agencies, international bodies, monitoring initiatives.
+  For each: name, why they likely hold this data, known limitations.
+  Do not invent URLs. Note only sources you have strong reason to believe exist.
+
+  # Step 3 — KNOWN GAPS
+  Identify aspects of the specification unlikely to be covered by any publicly available dataset.
+  Explain why. This is required output — do not omit it.

@@ -1,0 +1,95 @@
+id: merge-datasets
+title: Merging Two Datasets Without a Shared Key
+shortDesc: Match records across datasets that share an entity — company, location or project — but have no common unique identifier.
+context: EITI reports, beneficial ownership registries, company databases — these datasets were never designed to be linked. Matching by entity name is error-prone. The principles here determine whether the resulting merged dataset is trustworthy enough to publish or cite.
+mode: pipeline
+pipelineTags: [clean, verify]
+topicTags: [record linkage, entity matching, EITI]
+material: two datasets to link
+hasSkill: true
+skillDesc: Implements a fuzzy-match record linkage pipeline with a human-in-the-loop review queue for ambiguous matches.
+skillFile: record-linkage-skill.md
+
+risks:
+  - risk:
+      title: Silent false matches
+      body: "AI matches 'Shell Nigeria' to 'Shell Petroleum' as obvious — but the correct entity may be a third, distinct legal entity."
+    good:
+      title: Ambiguous matches routed to humans
+      body: Any match below the High confidence threshold goes to a review queue. A human sees both records and makes the decision. Nothing is silently resolved.
+  - risk:
+      title: Inconsistent normalisation
+      body: "AI expands 'Ltd' in some rows but not others, producing false non-matches that disappear into the unmatched pile."
+    good:
+      title: Normalisation runs deterministically before AI
+      body: Punctuation, case, legal suffixes, abbreviations — resolved by a deterministic step before AI sees any text. AI only scores normalised pairs.
+  - risk:
+      title: No audit trail on merged pairs
+      body: The merged dataset contains no record of which matches were auto-accepted and which a human confirmed.
+    good:
+      title: Full decision log for every pair
+      body: "Every pair in the merged dataset has an audit entry: confidence tier, evidence, decision source (auto/human), timestamp."
+  - risk:
+      title: Unmatched records silently dropped
+      body: Records that matched nothing disappear without explanation, potentially hiding a scope problem.
+    good:
+      title: Unmatched records are a required output
+      body: Unmatched records from both datasets are surfaced and reviewed. A large unmatched set stops the pipeline.
+
+principles:
+  - name: Objective
+    tag: Define the match key and entity type precisely
+    body: "Specify: which column in dataset A should match which column in dataset B, and what kind of entity (company name, person name, place name). The entity type determines the matching algorithm. A vague objective produces a pipeline designed for no entity type in particular."
+    ex1:
+      lbl: Objective template
+      txt: "Match: dataset-a.company_name → dataset-b.legal_entity_name\nEntity type: company name (English + French, may contain legal suffixes)\nAcceptable false match rate: 0% — all ambiguous matches to human review"
+
+  - name: Output shape
+    tag: Three outputs — merged file, unmatched records, audit log
+    body: The merged dataset, the unmatched records, and the match audit log are all required. The review queue is a first-class deliverable. Without it, you have no record of which matches were human-confirmed.
+    ex1:
+      lbl: Three required outputs
+      txt: "merged.csv — matched pairs + confidence tier + decision source\nunmatched-a.csv — records from A with no match\nunmatched-b.csv — records from B with no match\naudit.csv — full decision log"
+    warn: A merged dataset without an audit log cannot be cited in published analysis.
+
+  - name: Atomic steps
+    tag: Normalise first, score second, decide third
+    body: Normalisation and scoring must be kept separate. Normalisation is deterministic — it runs before AI sees any text. Scoring is where AI earns its place. Deciding is either automatic (high confidence) or human (medium/low).
+    ex1:
+      lbl: Step sequence
+      txt: "1. Profile both entity columns\n2. Define normalisation rules\n3. Run normalisation (deterministic)\n4. Generate candidate pairs (blocking)\n5. AI scores each pair\n6. Auto-accept High; route Medium/Low to review queue\n7. Human reviews queue\n8. Build merged dataset"
+
+  - name: Reasoning trace
+    tag: AI must show what it matched and why
+    body: For every candidate pair, AI must output which sub-components matched, the normalised values compared, and a one-sentence explanation of the score. The human reviewer uses this evidence to make the decision.
+    ex1:
+      lbl: Scoring output fields
+      txt: "\"normalised_a\": \"shell nigeria ltd\",\n\"normalised_b\": \"shell nigeria petroleum development\",\n\"similarity_score\": 0.72,\n\"matched_on\": [\"shell\", \"nigeria\"],\n\"score_rationale\": \"2/3 tokens in A match 2/5 in B; 'ltd' vs 'petroleum development' differs\""
+
+  - name: Human review
+    tag: Medium and Low matches require 100% human review
+    body: This is a structural guarantee, not a guideline. No Medium or Low confidence match enters the merged dataset without a human decision. For High confidence matches, a 10% spot-check is required before the final merge.
+    warn: If you are under time pressure and tempted to skip the review queue — that is precisely when errors enter the data and persist into analysis.
+
+prompt: |
+  You are a record linkage assistant. Score candidate entity pairs only — do not make match decisions.
+
+  # Entity type and normalisation context
+  Entity type: [company | person | place]
+  Known issues in dataset A: [e.g. mixed French/English, abbreviations]
+  Known issues in dataset B: [e.g. all-caps, legal suffix variations]
+
+  # Output per pair — one JSON object per line
+  {
+    "id_a": "<row ID from A>",
+    "id_b": "<row ID from B>",
+    "normalised_a": "<value as normalised>",
+    "normalised_b": "<value as normalised>",
+    "similarity_score": 0.0-1.0,
+    "matched_on": ["<which tokens or components matched>"],
+    "score_rationale": "<one sentence explaining the score>",
+    "flag": "<any anomaly the human reviewer should know, or null>"
+  }
+
+  # Candidate pairs
+  [PASTE CANDIDATE PAIRS HERE]

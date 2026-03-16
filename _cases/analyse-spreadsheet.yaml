@@ -1,0 +1,94 @@
+id: analyse-spreadsheet
+title: Analysing a Budget Spreadsheet
+shortDesc: Navigate, interrogate and surface patterns in a government budget spreadsheet — without trusting any AI-produced number unchecked.
+context: Government budget spreadsheets are large, inconsistently structured, and contain implicit logic in row hierarchies. The most important principle — AI must never produce a number that will be published. Its role is navigation and pattern spotting — the analyst computes.
+mode: prompt-guided
+pipelineTags: [analyse, verify]
+topicTags: [budget, spreadsheet, fiscal]
+material: a spreadsheet
+hasSkill: false
+
+risks:
+  - risk:
+      title: AI numbers taken at face value
+      body: "AI computes 'total education budget = $42M' — plausible, but based on an incorrect row range or wrong column."
+    good:
+      title: AI provides formula, analyst computes
+      body: AI identifies which rows and columns to use and shows the formula. The analyst applies it in the spreadsheet and verifies the result.
+  - risk:
+      title: Wrong unit of analysis
+      body: AI aggregates at programme level when each row is a sub-programme line — meaningful but wrong.
+    good:
+      title: Unit confirmed before any aggregation
+      body: Structure understanding is a separate first step. The analyst confirms what each row represents before posing any analytical question.
+  - risk:
+      title: Anomalies framed as findings
+      body: "'The transport budget doubled' — may be error, reclassification, or genuine. The confident framing removes the uncertainty."
+    good:
+      title: Anomalies flagged for investigation
+      body: AI lists anomalies as starting points. Each is followed up with direct spreadsheet inspection before becoming a claim.
+  - risk:
+      title: No traceability for published figures
+      body: A number appears in a report with no record of which rows produced it.
+    good:
+      title: Row citations required in every output
+      body: AI must cite rows and columns used for every statement. No citation, no output.
+
+principles:
+  - name: Objective
+    tag: Define the analytical question before opening the spreadsheet
+    body: "Not 'analyse the budget' but 'determine whether the education ministry's capital budget grew or shrank in real terms between 2021 and 2024.' The more specific the question, the more checkable the answer."
+    ex1:
+      lbl: Strong analytical objective
+      txt: "Question: What share of total budget went to health in each year 2020–2024?\nUnit: Ministry-level rows only (exclude sub-programme lines)\nOutput: year | health_budget | total_budget | share%"
+
+  - name: Output shape
+    tag: Specify the answer format before asking the question
+    body: For each analytical question, specify what a complete answer looks like — a number with percentage change, a ranked list, a flag list. If AI answers with a narrative instead of the format you specified, it has not answered the question.
+    ex1:
+      lbl: Output shape for a comparison
+      txt: "year | ministry | budget_current | budget_constant | change_%\nSource: rows [specify after structure review]"
+    warn: If AI answers a specific question with a narrative instead of your specified format, ask again with the format requirement explicit.
+
+  - name: Atomic steps
+    tag: Structure first — questions second — anomalies last
+    body: "Step 1: ask AI to describe the structure only — no calculations. Step 2: verify the structure yourself by reading the spreadsheet. Step 3: now ask analytical questions. Step 4: ask for anomalies as a separate final step."
+    ex1:
+      lbl: Step 1 instruction
+      txt: "Describe the structure only. Do not compute anything.\nFor each sheet: what it contains, what each row represents, column names, formula or subtotal rows."
+
+  - name: Reasoning trace
+    tag: AI must show rows and columns behind every statement
+    body: "For every analytical output, AI must cite which rows it used, which it excluded, and why — the formula, not the result. An AI statement without row references is unverifiable and unpublishable."
+    ex1:
+      lbl: Trace instruction
+      txt: "State which rows you are summing, which column, which rows excluded and why.\nGive me the formula. Do not compute the result yourself."
+    warn: AI must never produce a final figure for a published output. If it does, treat it as a formula to verify — not a result to use.
+
+  - name: Human review
+    tag: Every published number is computed by a human
+    body: Any figure in a published output must be computed by the analyst directly in the spreadsheet, using AI's row references as a guide. Key figures should be computed twice — by the analyst and by a formula — and reconciled.
+    warn: The most common error in AI-assisted spreadsheet analysis is using AI's computed figure directly. AI finds the rows. You sum them.
+
+prompt: |
+  You are a fiscal navigation assistant. Help me find information. Do not compute final figures.
+
+  # Step 1 — Structure only (no calculations)
+  Describe:
+  — Each sheet: what it contains, what each row represents
+  — Column hierarchy and key columns
+  — Any formula rows, subtotals, or totals rows
+  — Whether row unit differs between sheets
+
+  I will confirm the structure before we proceed.
+
+  # Step 2 — Navigation (after structure confirmed)
+  [PASTE YOUR ANALYTICAL QUESTION]
+
+  — Which rows are relevant, which to exclude and why
+  — Which column to use
+  — The formula I should apply — do NOT compute the result yourself
+  — If multiple calculations needed, give each formula separately
+
+  # Step 3 — Anomalies
+  List up to 5 rows or values that appear unusual. For each: what looks anomalous and what I should check directly.
