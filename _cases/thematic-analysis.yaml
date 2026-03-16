@@ -1,0 +1,96 @@
+id: thematic-analysis
+title: Thematic Analysis Across a Corpus
+shortDesc: Identify recurring themes, contradictions and silences across policy papers from multiple actors or countries.
+context: Comparing what different governments or donors say about a topic requires holding patterns across dozens of documents simultaneously. The risk here is AI inventing cross-document connections not grounded in individual document evidence.
+mode: pipeline
+pipelineTags: [analyse]
+topicTags: [research, policy, corpus]
+material: a corpus of reports
+hasSkill: true
+skillDesc: Automates the per-document coding pass, builds the comparative matrix deterministically, and produces a structured findings report with full citation trail.
+skillFile: thematic-analysis-skill.md
+
+risks:
+  - risk:
+      title: Post-hoc theme generation
+      body: Without a codebook, AI generates themes that fit the corpus — answering AI's question, not the researcher's.
+    good:
+      title: Researcher writes the codebook first
+      body: Themes are defined by the research question before any AI work. AI codes against them — it does not generate them.
+  - risk:
+      title: Cross-document hallucination
+      body: AI codes document B against what it absorbed from document A, inventing convergences not in either text.
+    good:
+      title: Isolated per-document coding
+      body: The per-document prompt forbids references to other documents. Cross-document synthesis only happens after a validated matrix is built.
+  - risk:
+      title: Theme name drift
+      body: "'Digital governance', 'digital_governance', 'digital gov' — AI drifts on terminology, making the matrix incomparable."
+    good:
+      title: Controlled vocabulary enforced at write time
+      body: Any coding entry whose theme field is not in the codebook is rejected immediately — not reviewed after.
+  - risk:
+      title: AI-compiled matrix
+      body: AI compiles the matrix itself, silently dropping low-evidence cells or inventing entries where evidence is thin.
+    good:
+      title: Matrix built deterministically
+      body: The matrix is a mechanical join of validated per-document codings. AI never aggregates.
+
+principles:
+  - name: Objective
+    tag: Define corpus and analytical frame before starting
+    body: Not "analyse these papers" but "code these 14 documents against these 6 themes and produce a comparative matrix." Both parts — the corpus and the themes — must be defined by the researcher. AI generates neither.
+    ex1:
+      lbl: Objective template
+      txt: "Code [N] documents from [actors/years] against codebook [name].\nProduce: per-document codings + comparative matrix + synthesis.\nDo not generate new themes."
+
+  - name: Output shape
+    tag: The matrix is the primary deliverable
+    body: The primary deliverable is a structured matrix — documents as rows, themes as columns, evidence excerpts as cells. Define the columns before running the analysis. The synthesis narrative is downstream of the matrix — it cannot be trusted if the matrix hasn't been validated.
+    ex1:
+      lbl: Matrix shape
+      txt: "rows: document filenames\ncols: [theme1, theme2, ...]\ncells: direct quote + paragraph reference"
+    warn: AI must not build the matrix. It is a deterministic join of per-document codings — built by a tool, not AI.
+
+  - name: Atomic steps
+    tag: Coding and synthesis are two completely separate passes
+    body: Separate the coding pass from the synthesis pass. Run all per-document coding. Validate. Build the matrix. Only then run synthesis. Mixing coding and synthesis is the primary failure mode.
+    ex1:
+      lbl: Required sequence
+      txt: "1. Code doc A → validate\n2. Code doc B → validate\n...\n3. Build matrix (tool, not AI)\n4. Human reviews matrix\n5. Synthesis pass"
+
+  - name: Reasoning trace
+    tag: Confidence and note per coding entry
+    body: Ask AI to produce a confidence field and a note for every coding entry. High means direct quote. Medium means paraphrase with context. Low means inferred. The note explains any interpretive choice. Low-confidence entries must be human-reviewed before the matrix is finalised.
+    ex1:
+      lbl: Trace fields
+      txt: "\"confidence\": \"medium\",\n\"note\": \"Document uses 'oversight mechanism' — classified under MONITORING theme based on context\""
+
+  - name: Human review
+    tag: Two mandatory gates before synthesis
+    body: Gate 1 — before coding begins — review and sign off on the codebook. Ambiguous definitions produce inconsistent codings. Gate 2 — before synthesis — spot-check 10% of matrix cells against the original source. Any cell anchoring a key finding must be personally verified.
+    warn: Do not run the synthesis pass until both gates are complete.
+
+prompt: |
+  You are performing systematic thematic coding. Code THIS document against the codebook only. Do not reference other documents.
+
+  # Codebook — use ONLY these names, exactly as written
+  [PASTE YOUR THEMES WITH ONE-LINE DEFINITIONS]
+
+  # Output — a JSON array
+  {
+    "theme": "<exact name from codebook>",
+    "evidence": "<direct quote — not paraphrase>",
+    "paragraph_ref": "<section or page>",
+    "confidence": "high | medium | low",
+    "note": "<interpretive choice, or null>"
+  }
+  "unlisted_themes": ["<themes observed but not in codebook>"]
+
+  # Rules
+  — Never use a theme name not in the codebook
+  — Never omit evidence or paragraph_ref
+  — Never reference other documents
+
+  # Document: [FILENAME]
+  [DOCUMENT TEXT]

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI for Civic Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fafaf8;--bg2:#ffffff;--bg3:#f2f1ee;
+  --border:#e0ded8;--border2:#c8c5bc;
+  --text:#1a1916;--muted:#5a5750;--dim:#a09d96;
+  --amber:#c47d00;--abg:rgba(196,125,0,.07);--abd:#c47d00;
+  --teal:#007a6e;--tbg:rgba(0,122,110,.07);--tbd:#007a6e;
+  --coral:#c0392b;--rbg:rgba(192,57,43,.07);--rbd:#c0392b;
+  --sage:#2e7d4f;--sbg:rgba(46,125,79,.07);--sbd:#2e7d4f;
+  --violet:#6b4faa;--vbg:rgba(107,79,170,.07);--vbd:#6b4faa;
+  --gold:#b07c00;--gbg:rgba(176,124,0,.07);--gbd:#b07c00;
+  --h:'Syne',sans-serif;--b:'Source Serif 4',serif;--m:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--b);font-size:15px;line-height:1.65;min-height:100vh}
+.view{display:none}.view.active{display:block}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:200;background:rgba(250,250,248,.97);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:50px;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.logo{font-family:var(--h);font-weight:800;font-size:.88rem;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.logo-dot{width:6px;height:6px;background:var(--amber);border-radius:50%}
+.nav-links{display:flex;align-items:center;gap:.2rem}
+.nl{font-family:var(--m);font-size:.62rem;color:var(--muted);padding:4px 10px;border-radius:4px;cursor:pointer;transition:all .13s;border:1px solid transparent;white-space:nowrap}
+.nl:hover{color:var(--text);border-color:var(--border)}
+.nl.on{color:var(--amber);border-color:var(--abd);background:var(--abg)}
+
+/* ── TOOLTIP ── */
+.tip{position:relative;border-bottom:1px dashed var(--tbd);color:var(--teal);cursor:help;display:inline}
+.tip:hover .tip-box,.tip:focus .tip-box{display:block}
+.tip-box{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);z-index:300;width:260px;background:#fff;border:1px solid var(--border2);border-radius:6px;padding:.65rem .8rem;font-family:var(--b);font-size:.78rem;font-style:normal;color:var(--text);line-height:1.55;font-weight:300;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.12);text-transform:none;letter-spacing:0}
+.tip-box strong{display:block;font-family:var(--h);font-size:.82rem;font-weight:700;color:var(--teal);margin-bottom:3px;text-transform:none;letter-spacing:0}
+.tip-box::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--border2)}
+
+/* ── SHARED LAYOUT ── */
+.inner{max-width:820px;margin:0 auto;padding:2.5rem 1.5rem 5rem}
+.page-eye{font-family:var(--m);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:.8rem;display:flex;align-items:center;gap:8px}
+.page-eye::before{content:'';display:inline-block;width:16px;height:1px;background:var(--amber)}
+.page-h1{font-family:var(--h);font-size:clamp(1.7rem,4vw,2.5rem);font-weight:800;line-height:1.05;letter-spacing:-.025em;margin-bottom:.9rem}
+.page-lead{color:var(--muted);font-size:.93rem;line-height:1.72;font-weight:300;max-width:60ch;margin-bottom:2rem}
+.div{height:1px;background:var(--border);margin:1.8rem 0}
+.sl{font-family:var(--m);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+.sl::after{content:'';flex:1;height:1px;background:var(--border)}
+.sl-tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);font-family:var(--b);font-size:.6rem;color:var(--dim);cursor:help;position:relative;margin-left:.3rem;flex-shrink:0;line-height:1;font-style:normal;text-transform:none;letter-spacing:0}
+.sl-tip:hover .tip-box{display:block}
+.sl-tip .tip-box{bottom:calc(100% + 6px);left:0;transform:none;font-family:var(--b);text-transform:none;letter-spacing:0}
+
+.prose{font-size:.92rem;color:var(--muted);line-height:1.78;font-weight:300;max-width:66ch}
+.prose strong{color:var(--text);font-weight:600}
+.prose p+p{margin-top:.9rem}
+
+/* ── HERO ── */
+.hero{padding:3rem 1.5rem 2rem;max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:start}
+@media(max-width:720px){.hero{grid-template-columns:1fr;gap:2rem}}
+.hero-eye{font-family:var(--m);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:.9rem;display:flex;align-items:center;gap:9px}
+.hero-eye::before{content:'';display:inline-block;width:18px;height:1px;background:var(--amber)}
+.hero h1{font-family:var(--h);font-size:clamp(2rem,4.5vw,3.4rem);font-weight:800;line-height:1.0;letter-spacing:-.03em;margin-bottom:1rem}
+.hero h1 em{font-style:normal;color:var(--amber)}
+.hero-lead{color:var(--muted);font-size:.92rem;line-height:1.72;font-weight:300;max-width:44ch;margin-bottom:1.4rem}
+.hero-call{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:6px;padding:.95rem 1.2rem;font-size:.84rem;color:var(--text);line-height:1.7}
+.hero-call strong{color:var(--amber);font-family:var(--h);font-weight:700}
+.pc{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.pc-title{font-family:var(--m);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.85rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.pc-title span{color:var(--amber);font-size:.58rem}
+.pr{display:flex;align-items:stretch;border-bottom:1px solid var(--border)}
+.pr:last-child{border-bottom:none}
+.pr-num{font-family:var(--m);font-size:.65rem;font-weight:500;color:var(--amber);padding:.8rem .82rem;min-width:36px;display:flex;align-items:flex-start;justify-content:center;background:rgba(240,168,50,.04);border-right:1px solid var(--border)}
+.pr-bd{padding:.72rem .95rem;flex:1}
+.pr-name{font-family:var(--h);font-size:.84rem;font-weight:700;margin-bottom:1px}
+.pr-sub{font-size:.75rem;color:var(--muted);line-height:1.45;font-weight:300}
+
+/* ── MAD-LIB FILTER ── */
+.madlib{margin:1.4rem 0 1.2rem}
+.madlib-sentence{font-family:var(--b);font-size:1.25rem;color:var(--text);line-height:1.9;font-weight:300}
+.ml-blank{display:inline-block;position:relative}
+.ml-trigger{display:inline-flex;align-items:center;gap:4px;border-bottom:2px solid var(--amber);color:var(--amber);cursor:pointer;font-weight:600;padding:0 3px;white-space:nowrap;transition:background .13s;border-radius:2px 2px 0 0}
+.ml-trigger:hover{background:var(--abg)}
+.ml-trigger.has-value{color:var(--teal);border-bottom-color:var(--teal)}
+.ml-trigger.has-value:hover{background:var(--tbg)}
+.ml-arrow{font-size:.6rem;opacity:.5;margin-left:1px}
+.ml-dropdown{display:none;position:absolute;top:calc(100% + 3px);left:0;z-index:150;background:#fff;border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.12);min-width:190px;overflow:hidden}
+.ml-blank.open .ml-dropdown{display:block}
+.ml-option{display:block;padding:.48rem .85rem;font-family:var(--b);font-size:.87rem;color:var(--text);cursor:pointer;transition:background .1s;white-space:nowrap;font-weight:300}
+.ml-option:hover{background:var(--bg3)}
+.ml-option.sel{color:var(--teal);font-weight:600;background:var(--tbg)}
+.ml-option.rst{color:var(--dim);border-top:1px solid var(--border);font-style:italic}
+
+/* ── FILTER + GRID ── */
+.fs{padding:0 1.5rem 1.5rem;max-width:1180px;margin:0 auto}
+.sw{position:relative;margin-bottom:1rem}
+.sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:.95rem;pointer-events:none}
+#si{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:var(--b);font-size:.88rem;padding:.62rem .9rem .62rem 2.5rem;border-radius:6px;outline:none;transition:border-color .18s}
+#si::placeholder{color:var(--dim)}
+#si:focus{border-color:var(--amber)}
+.fr{display:flex;gap:.38rem;flex-wrap:wrap;align-items:center}
+.fl{font-family:var(--m);font-size:.59rem;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-right:.15rem}
+.fsep{width:1px;height:15px;background:var(--border);margin:0 .3rem}
+.fb{font-family:var(--m);font-size:.6rem;padding:3px 9px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .13s}
+.fb:hover{border-color:var(--muted);color:var(--text)}
+.fb.active{font-weight:500}
+.fb[data-f="pipe:define"].active{background:var(--tbg);border-color:var(--tbd);color:var(--teal)}
+.fb[data-f="pipe:find"].active{background:var(--vbg);border-color:var(--vbd);color:var(--violet)}
+.fb[data-f="pipe:verify"].active{background:var(--rbg);border-color:var(--rbd);color:var(--coral)}
+.fb[data-f="pipe:clean"].active{background:var(--gbg);border-color:var(--gbd);color:var(--gold)}
+.fb[data-f="pipe:analyse"].active{background:var(--tbg);border-color:var(--tbd);color:var(--teal)}
+.fb[data-f="pipe:present"].active{background:var(--abg);border-color:var(--abd);color:var(--amber)}
+.fb[data-f="mode:prompt-guided"].active{background:var(--tbg);border-color:var(--tbd);color:var(--teal)}
+.fb[data-f="mode:pipeline"].active{background:var(--abg);border-color:var(--abd);color:var(--amber)}
+.gs{padding:0 1.5rem 4rem;max-width:1180px;margin:0 auto}
+.gc{font-family:var(--m);font-size:.6rem;color:var(--dim);margin-bottom:1rem}
+.gc strong{color:var(--muted)}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:.85rem}
+.cc{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:1.2rem;cursor:pointer;transition:border-color .15s,transform .15s,background .15s;position:relative;overflow:hidden;animation:fadeUp .35s ease both}
+.cc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ca,var(--amber));opacity:0;transition:opacity .15s}
+.cc:hover{border-color:var(--border2);transform:translateY(-2px);background:var(--bg3)}
+.cc:hover::after{opacity:1}
+.ctit{font-family:var(--h);font-size:1rem;font-weight:700;margin-bottom:.35rem;line-height:1.25}
+.cdesc{font-size:.8rem;color:var(--muted);line-height:1.6;font-weight:300;margin-bottom:.9rem}
+
+/* pipeline strip on card */
+.c-pipe{display:flex;gap:0;margin-bottom:.5rem;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.c-pipe-step{font-family:var(--m);font-size:.52rem;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;color:var(--dim);border-right:1px solid var(--border);background:transparent;white-space:nowrap;flex:1;text-align:center}
+.c-pipe-step:last-child{border-right:none}
+.c-pipe-step.on-define{background:rgba(0,122,110,.1);color:var(--teal);font-weight:600}
+.c-pipe-step.on-find{background:rgba(107,79,170,.1);color:var(--violet);font-weight:600}
+.c-pipe-step.on-get{background:rgba(46,125,79,.1);color:var(--sage);font-weight:600}
+.c-pipe-step.on-verify{background:rgba(192,57,43,.1);color:var(--coral);font-weight:600}
+.c-pipe-step.on-clean{background:rgba(176,124,0,.1);color:var(--gold);font-weight:600}
+.c-pipe-step.on-analyse{background:rgba(0,122,110,.1);color:var(--teal);font-weight:600}
+.c-pipe-step.on-present{background:rgba(196,125,0,.1);color:var(--amber);font-weight:600}
+
+/* topic tags */
+.ctags{display:flex;flex-wrap:wrap;gap:.28rem;margin-top:.45rem}
+.tag{font-family:var(--m);font-size:.56rem;padding:2px 7px;border-radius:3px}
+.tt{background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+.cf{display:flex;align-items:center;justify-content:space-between;margin-top:.9rem;padding-top:.8rem;border-top:1px solid var(--border)}
+.csk{font-family:var(--m);font-size:.56rem;color:var(--dim)}
+.csk.y{color:var(--sage)}
+.car{color:var(--dim);font-size:.72rem;transition:transform .13s,color .13s}
+.cc:hover .car{transform:translateX(4px);color:var(--amber)}
+.es{grid-column:1/-1;padding:3rem;text-align:center;color:var(--dim);font-family:var(--m);font-size:.75rem}
+
+/* ── DETAIL ── */
+.dw{max-width:780px;margin:0 auto;padding:2rem 1.5rem 5rem}
+.bk{display:inline-flex;align-items:center;gap:7px;font-family:var(--m);font-size:.6rem;color:var(--muted);cursor:pointer;margin-bottom:2rem;transition:color .13s;letter-spacing:.06em;text-transform:uppercase;background:none;border:none}
+.bk:hover{color:var(--amber)}
+.dm{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem}
+.dt{font-family:var(--h);font-size:clamp(1.5rem,4vw,2.4rem);font-weight:800;letter-spacing:-.025em;line-height:1.08;margin-bottom:1rem}
+.dc{font-size:.95rem;color:var(--muted);line-height:1.75;font-weight:300;padding:1rem 1.2rem;background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:6px}
+.pbar{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:5px;overflow:hidden;width:fit-content;margin-bottom:1.8rem;flex-wrap:wrap}
+.pstep{font-family:var(--m);font-size:.56rem;letter-spacing:.07em;text-transform:uppercase;padding:5px 11px;color:var(--dim);border-right:1px solid var(--border)}
+.pstep:last-child{border-right:none}
+.pstep.on{color:var(--teal);background:var(--tbg)}
+
+/* risk comparison */
+.rc-cols{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+@media(max-width:540px){.rc-cols{grid-template-columns:1fr}}
+.rc-col{display:flex;flex-direction:column}
+.rc-head{padding:.58rem .88rem;font-family:var(--m);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;font-weight:500;border-bottom:1px solid var(--border)}
+.rc-col.naive .rc-head{background:rgba(232,97,74,.07);color:var(--coral);border-right:1px solid var(--border)}
+.rc-col.good .rc-head{background:rgba(52,196,180,.07);color:var(--teal)}
+.rc-items{display:flex;flex-direction:column;flex:1}
+.rc-item{padding:.65rem .88rem;font-size:.79rem;line-height:1.58;font-weight:300;border-bottom:1px solid var(--border);display:flex;gap:.5rem;align-items:flex-start}
+.rc-item:last-child{border-bottom:none}
+.rc-col.naive .rc-item{color:var(--muted);background:var(--bg2);border-right:1px solid var(--border)}
+.rc-col.good .rc-item{color:var(--muted);background:var(--bg2)}
+.rc-col.naive .rc-item:nth-child(odd){background:var(--bg)}
+.rc-col.good .rc-item:nth-child(odd){background:var(--bg)}
+.rc-col.naive .rc-item::before{content:'✕';font-family:var(--m);font-size:.6rem;color:var(--coral);flex-shrink:0;margin-top:3px;opacity:.8}
+.rc-col.good .rc-item::before{content:'✓';font-family:var(--m);font-size:.6rem;color:var(--teal);flex-shrink:0;margin-top:3px;font-weight:700}
+.rc-item strong{color:var(--text);font-weight:600;display:block;margin-bottom:2px;font-family:var(--h);font-size:.8rem}
+
+/* principles accordion */
+.pa{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.5rem}
+.pa-hd{display:flex;align-items:center;gap:.85rem;padding:.78rem 1rem;cursor:pointer;background:var(--bg2);transition:background .13s;user-select:none}
+.pa-hd:hover{background:var(--bg3)}
+.pa-num{font-family:var(--m);font-size:.65rem;font-weight:500;color:var(--amber);background:var(--abg);border:1px solid var(--abd);width:23px;height:23px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pa-tw{flex:1}
+.pa-name{font-family:var(--h);font-size:.9rem;font-weight:700}
+.pa-tag{font-family:var(--m);font-size:.58rem;color:var(--dim);margin-top:1px;letter-spacing:.04em}
+.pa-chev{color:var(--dim);font-size:.62rem;transition:transform .18s}
+.pa.open .pa-chev{transform:rotate(180deg)}
+.pa-body{display:none;padding:.85rem 1rem .95rem 3.2rem;border-top:1px solid var(--border);background:var(--bg3);font-size:.84rem;color:var(--muted);font-weight:300;line-height:1.72}
+.pa.open .pa-body{display:block}
+.pa-body strong{color:var(--text);font-weight:600}
+.pa-ex{margin-top:.75rem;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--amber);border-radius:4px;padding:.6rem .85rem;font-family:var(--m);font-size:.73rem;color:var(--text);line-height:1.6;white-space:pre-wrap}
+.pa-ex .lbl{font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);display:block;margin-bottom:3px}
+.pa-warn{margin-top:.6rem;background:rgba(232,97,74,.06);border:1px solid var(--rbd);border-radius:4px;padding:.5rem .8rem;font-size:.78rem;color:var(--coral);line-height:1.5}
+
+/* ── ARTIFACTS (prompt + skill) ── */
+.artifact-section{margin-top:0}
+.artifact-tabs{display:flex;gap:0;border:1px solid var(--border);border-radius:7px 7px 0 0;overflow:hidden}
+.atab{flex:1;font-family:var(--m);font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;padding:.62rem 1rem;background:var(--bg2);color:var(--muted);cursor:pointer;transition:all .13s;border:none;border-right:1px solid var(--border);text-align:center;font-weight:500}
+.atab:last-child{border-right:none}
+.atab.on{background:var(--bg3);color:var(--text)}
+.atab.on.p-tab{border-bottom:2px solid var(--teal);color:var(--teal)}
+.atab.on.s-tab{border-bottom:2px solid var(--amber);color:var(--amber)}
+.artifact-panel{display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 7px 7px;overflow:hidden}
+.artifact-panel.on{display:block}
+
+/* prompt panel */
+.prompt-usage{display:flex;gap:.5rem;padding:.7rem 1rem;background:rgba(52,196,180,.04);border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap}
+.prompt-usage-label{font-family:var(--m);font-size:.58rem;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;margin-right:.3rem}
+.usage-btn{font-family:var(--m);font-size:.6rem;padding:3px 10px;border-radius:3px;border:1px solid var(--tbd);background:var(--tbg);color:var(--teal);cursor:pointer;transition:all .13s}
+.usage-btn:hover,.usage-btn.on{background:var(--teal);color:#000;font-weight:500}
+.prompt-note{padding:.65rem 1rem;background:var(--bg2);border-bottom:1px solid var(--border);font-size:.78rem;color:var(--muted);line-height:1.55;display:none}
+.prompt-note.on{display:block}
+.prompt-note strong{color:var(--text);font-weight:600}
+.prompt-note a{color:var(--teal);text-decoration:none;border-bottom:1px solid var(--tbd)}
+.prompt-note a:hover{border-color:var(--teal)}
+.prompt-body{padding:.85rem 1rem;font-family:var(--m);font-size:.74rem;line-height:1.72;color:var(--text);white-space:pre-wrap;overflow-x:auto;background:var(--bg3)}
+.pv{color:var(--teal)}.pcc{color:var(--dim)}
+.prompt-footer{display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem;background:var(--bg2);border-top:1px solid var(--border)}
+.prompt-footer span{font-family:var(--m);font-size:.58rem;color:var(--dim)}
+.cpb{font-family:var(--m);font-size:.58rem;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 9px;border-radius:3px;cursor:pointer;transition:all .13s}
+.cpb:hover{border-color:var(--teal);color:var(--teal)}
+
+/* skill panel */
+.skill-intro{padding:.85rem 1rem;background:var(--bg2);border-bottom:1px solid var(--border);font-size:.82rem;color:var(--muted);line-height:1.6;font-weight:300}
+.skill-intro strong{color:var(--text);font-weight:600}
+.skill-tools{display:flex;flex-direction:column;gap:0}
+.skill-tool{border-bottom:1px solid var(--border)}
+.skill-tool:last-child{border-bottom:none}
+.skill-tool-head{display:flex;align-items:center;gap:.7rem;padding:.65rem 1rem;cursor:pointer;background:var(--bg2);transition:background .13s;user-select:none}
+.skill-tool-head:hover{background:var(--bg3)}
+.skill-tool-icon{font-size:1rem;flex-shrink:0}
+.skill-tool-name{font-family:var(--h);font-size:.84rem;font-weight:700;flex:1}
+.skill-tool-tag{font-family:var(--m);font-size:.58rem;color:var(--dim);letter-spacing:.04em}
+.skill-tool-chev{color:var(--dim);font-size:.6rem;transition:transform .18s}
+.skill-tool.open .skill-tool-chev{transform:rotate(180deg)}
+.skill-tool-body{display:none;padding:.7rem 1rem .85rem 2.8rem;border-top:1px solid var(--border);background:var(--bg3);font-size:.8rem;color:var(--muted);line-height:1.65;font-weight:300}
+.skill-tool.open .skill-tool-body{display:block}
+.skill-tool-body strong{color:var(--text);font-weight:600}
+.skill-tool-body a{color:var(--teal);text-decoration:none;border-bottom:1px solid var(--tbd)}
+.skill-tool-body a:hover{border-color:var(--teal)}
+.skill-tool-body .cmd{margin-top:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:.5rem .8rem;font-family:var(--m);font-size:.72rem;color:var(--sage);white-space:pre-wrap}
+.skill-footer{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;background:var(--bg2);border-top:1px solid var(--border)}
+.skill-footer span{font-family:var(--m);font-size:.58rem;color:var(--dim)}
+.dlb{font-family:var(--m);font-size:.64rem;background:var(--amber);color:#000;border:none;padding:5px 14px;border-radius:4px;cursor:pointer;font-weight:500;transition:opacity .13s}
+.dlb:hover{opacity:.85}
+
+/* ── GLOSSARY ── */
+.glos-search{position:relative;margin-bottom:1.5rem}
+.glos-search input{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:var(--b);font-size:.88rem;padding:.62rem .9rem .62rem 2.5rem;border-radius:6px;outline:none;transition:border-color .18s}
+.glos-search input::placeholder{color:var(--dim)}
+.glos-search input:focus{border-color:var(--amber)}
+.glos-search .sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:.95rem;pointer-events:none}
+.glos-alpha{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:1.5rem}
+.alpha-btn{font-family:var(--m);font-size:.6rem;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .13s}
+.alpha-btn:hover{border-color:var(--muted);color:var(--text)}
+.alpha-btn.on{background:var(--amber);border-color:var(--amber);color:#000;font-weight:700}
+.glos-group{margin-bottom:1.5rem}
+.glos-letter{font-family:var(--h);font-size:1.1rem;font-weight:800;color:var(--amber);margin-bottom:.7rem;letter-spacing:-.01em}
+.glos-entry{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:.85rem 1rem;margin-bottom:.5rem}
+.glos-term{font-family:var(--h);font-size:.92rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+.glos-def{font-size:.82rem;color:var(--muted);line-height:1.65;font-weight:300}
+.glos-def strong{color:var(--text);font-weight:600}
+.glos-related{margin-top:.4rem;font-family:var(--m);font-size:.58rem;color:var(--dim)}
+.glos-related span{color:var(--teal);cursor:pointer;margin-left:.3rem}
+.glos-related span:hover{color:var(--text)}
+.glos-tag{display:inline;font-family:var(--m);font-size:.56rem;padding:1px 6px;border-radius:3px;margin-right:.3rem;vertical-align:middle}
+
+/* ── TUTORIAL ── */
+.tut-nav{display:flex;flex-direction:column;gap:.3rem;padding:1rem 0;border-right:1px solid var(--border);min-width:180px}
+.tut-layout{display:grid;grid-template-columns:180px 1fr;gap:2rem;align-items:start}
+@media(max-width:640px){.tut-layout{grid-template-columns:1fr}.tut-nav{flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--border);padding-bottom:1rem}}
+.tut-nav-item{font-family:var(--m);font-size:.62rem;padding:5px 10px;border-radius:4px;cursor:pointer;color:var(--muted);transition:all .13s;border:1px solid transparent;white-space:nowrap}
+.tut-nav-item:hover{color:var(--text)}
+.tut-nav-item.on{color:var(--amber);border-color:var(--abd);background:var(--abg)}
+.tut-section{display:none}
+.tut-section.on{display:block}
+.tut-h2{font-family:var(--h);font-size:1.2rem;font-weight:800;margin-bottom:.5rem}
+.tut-step{display:flex;gap:1rem;margin-bottom:1.3rem;align-items:flex-start}
+.tut-step-num{font-family:var(--m);font-size:.65rem;font-weight:500;color:var(--amber);background:var(--abg);border:1px solid var(--abd);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.tut-step-body{flex:1}
+.tut-step-title{font-family:var(--h);font-size:.9rem;font-weight:700;margin-bottom:.25rem}
+.tut-step-desc{font-size:.82rem;color:var(--muted);line-height:1.65;font-weight:300}
+.tut-step-desc strong{color:var(--text);font-weight:600}
+.tut-step-desc a{color:var(--teal);text-decoration:none;border-bottom:1px solid var(--tbd)}
+.tut-step-desc a:hover{border-color:var(--teal)}
+.tut-code{margin-top:.6rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.6rem .85rem;font-family:var(--m);font-size:.72rem;color:var(--sage);white-space:pre-wrap;line-height:1.6}
+.tut-note{background:var(--abg);border:1px solid var(--abd);border-radius:5px;padding:.65rem .9rem;font-size:.8rem;color:var(--muted);line-height:1.55;margin-top:.8rem}
+.tut-note strong{color:var(--amber);font-weight:600}
+
+footer{border-top:1px solid var(--border);padding:1.4rem;text-align:center;font-family:var(--m);font-size:.58rem;color:var(--dim)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.cc:nth-child(1){animation-delay:.04s}.cc:nth-child(2){animation-delay:.08s}
+.cc:nth-child(3){animation-delay:.12s}.cc:nth-child(4){animation-delay:.16s}
+.cc:nth-child(5){animation-delay:.20s}.cc:nth-child(6){animation-delay:.24s}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" onclick="show('index')"><span class="logo-dot"></span>AI for Civic Data</a>
+  <div class="nav-links">
+    <span class="nl on" id="nl-index" onclick="show('index')">Cases</span>
+    <span class="nl" id="nl-tutorial" onclick="show('tutorial')">Get started</span>
+    <span class="nl" id="nl-glossary" onclick="show('glossary')">Glossary</span>
+  </div>
+</nav>
+
+<!-- ══ INDEX ══ -->
+<div id="view-index" class="view active">
+<div class="hero" style="grid-template-columns:1fr;max-width:760px;gap:0">
+  <div>
+    <div class="hero-eye">Case Study Library</div>
+    <h1>The benefits of AI,<br>without the<br><em>blind spots.</em></h1>
+    <p class="hero-lead">Guides for civil society practitioners who want to work smarter with AI — without losing control of their analysis.</p>
+
+    <div class="madlib">
+      <div class="madlib-sentence">
+        I am at the
+        <span class="ml-blank" id="ml-stage">
+          <span class="ml-trigger" onclick="toggleML('ml-stage')">any<span class="ml-arrow">▾</span></span>
+          <div class="ml-dropdown" id="ml-stage-dd"></div>
+        </span>
+        stage of my data work, dealing with
+        <span class="ml-blank" id="ml-material">
+          <span class="ml-trigger" onclick="toggleML('ml-material')">any material<span class="ml-arrow">▾</span></span>
+          <div class="ml-dropdown" id="ml-material-dd"></div>
+        </span>.
+      </div>
+    </div>
+
+    <div class="hero-call"><strong>New here?</strong> Start with the <span style="color:var(--teal);cursor:pointer;border-bottom:1px solid var(--tbd)" onclick="show('tutorial')">Get started guide</span> to understand how prompts and skill files work, and how to set up each tool. Unfamiliar terms are <span class="tip">highlighted<span class="tip-box"><strong>Highlighted terms</strong>Hover any underlined teal term to see a definition from the glossary.</span></span> throughout.</div>
+  </div>
+</div>
+
+<div class="fs">
+  <div class="sw"><span class="sico">⌕</span><input type="text" id="si" placeholder="Or search by keyword…" oninput="rc()"></div>
+</div>
+<div class="gs"><div class="gc" id="gc"></div><div class="cg" id="cg"></div></div>
+</div>
+
+<!-- ══ DETAIL ══ -->
+<div id="view-detail" class="view"><div class="dw" id="dw"></div></div>
+
+<!-- ══ GLOSSARY ══ -->
+<div id="view-glossary" class="view">
+<div class="inner">
+  <div class="page-eye">Reference</div>
+  <h1 class="page-h1">Glossary</h1>
+  <p class="page-lead">Key terms used across the case studies. Hover any teal underlined word on any page to see its definition inline.</p>
+  <div class="glos-search"><span class="sico">⌕</span><input type="text" id="gsi" placeholder="Search terms…" oninput="filterGlos()"></div>
+  <div class="glos-alpha" id="glos-alpha"></div>
+  <div id="glos-entries"></div>
+</div>
+</div>
+
+<!-- ══ TUTORIAL ══ -->
+<div id="view-tutorial" class="view">
+<div class="inner">
+  <div class="page-eye">Guide</div>
+  <h1 class="page-h1">Get started</h1>
+  <p class="page-lead">Each case study is built around five principles for responsible AI use. This guide explains the principles, what the case studies provide, and how to use each tool.</p>
+  <div class="tut-layout">
+    <div class="tut-nav" id="tut-nav">
+      <div class="tut-nav-item on" onclick="showTut('principles')">The 5 principles</div>
+      <div class="tut-nav-item" onclick="showTut('overview')">Prompts &amp; skills</div>
+      <div class="tut-nav-item" onclick="showTut('prompt-chat')">Prompt in chat</div>
+      <div class="tut-nav-item" onclick="showTut('prompt-custom')">Custom chatbot</div>
+      <div class="tut-nav-item" onclick="showTut('skill-claudecode')">Skill · Claude Code</div>
+      <div class="tut-nav-item" onclick="showTut('skill-desktop')">Skill · Claude.ai</div>
+      <div class="tut-nav-item" onclick="showTut('skill-gemini')">Skill · Gemini CLI</div>
+    </div>
+    <div>
+
+      <div class="tut-section on" id="tut-principles">
+        <div class="tut-h2">The 5 principles</div>
+        <p class="prose" style="margin-bottom:1.5rem">Every case study on this site applies the same five principles. They are not a checklist to follow after the fact — they are decisions you make <em>before</em> you open a chat window or run a pipeline. Skipping any one of them is where things go wrong.</p>
+        <div class="div"></div>
+        <div class="pc" style="margin-bottom:0">
+          <div class="pc-title"><span>Applied to every case study</span></div>
+          <div class="pr"><div class="pr-num">01</div><div class="pr-bd"><div class="pr-name">Objective</div><div class="pr-sub">Define what success looks like in concrete, checkable terms — before touching AI. Not "summarise this document" but "extract all commitments naming a specific actor, obligation, and timeframe — with the paragraph reference for each."</div></div></div>
+          <div class="pr"><div class="pr-num">02</div><div class="pr-bd"><div class="pr-name">Output shape</div><div class="pr-sub">Specify the structure and fields of the result before you ask for it. A table with fixed columns, a JSON schema, a numbered list with named fields. Without a defined shape, AI produces narrative that is hard to verify and impossible to compare across documents.</div></div></div>
+          <div class="pr"><div class="pr-num">03</div><div class="pr-bd"><div class="pr-name">Atomic steps</div><div class="pr-sub">Break the task into explicit, ordered sub-tasks and ask AI to complete them one at a time. Do not ask AI to "do everything at once" — each step should have a defined input, a defined output, and a verification point before the next step begins.</div></div></div>
+          <div class="pr"><div class="pr-num">04</div><div class="pr-bd"><div class="pr-name">Reasoning trace</div><div class="pr-sub">Require AI to show its assumptions and interpretive choices at each step — not just its output. Without a trace, you see only the conclusion. A confidence field, a note field, or inline code comments all count. If AI can't show its reasoning, you can't evaluate it.</div></div></div>
+          <div class="pr"><div class="pr-num">05</div><div class="pr-bd"><div class="pr-name">Human review</div><div class="pr-sub">Design how a human will verify the result before you run anything. Define which outputs require mandatory review, which require spot-checks, and which can be validated automatically. The review process is part of the work, not an afterthought.</div></div></div>
+        </div>
+      </div>
+
+      <div class="tut-section" id="tut-overview">
+        <div class="tut-h2">Prompts and skill files</div>
+        <p class="prose" style="margin-bottom:1.5rem">Every case study gives you something concrete to use. The <strong>prompt</strong> is a structured text template that applies the 5 principles to that specific task. The <strong>skill file</strong> (pipeline cases only) is a reusable instruction set for agentic AI tools — it automates the multi-step process so you don't have to run each step manually.</p>
+        <div class="div"></div>
+        <div class="sl">Choosing the right approach</div>
+        <div style="display:flex;flex-direction:column;gap:.7rem">
+          <div style="background:var(--bg2);border:1px solid var(--tbd);border-left:3px solid var(--teal);border-radius:6px;padding:.85rem 1rem">
+            <div style="font-family:var(--h);font-size:.88rem;font-weight:700;color:var(--teal);margin-bottom:.3rem">Use the prompt if…</div>
+            <div style="font-size:.82rem;color:var(--muted);line-height:1.6;font-weight:300">You want to run a one-off task, try the approach before committing to a setup, or work with a dataset small enough to handle in a single session. The prompt works in any AI chat interface with no installation required.</div>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--abd);border-left:3px solid var(--amber);border-radius:6px;padding:.85rem 1rem">
+            <div style="font-family:var(--h);font-size:.88rem;font-weight:700;color:var(--amber);margin-bottom:.3rem">Use the skill file if…</div>
+            <div style="font-size:.82rem;color:var(--muted);line-height:1.6;font-weight:300">You need to process a corpus of files, repeat the task regularly, or want an automated pipeline that handles batching, validation, and audit logging. Skill files require a tool that can run agentic AI workflows — Claude Code, Claude.ai Projects, or Gemini CLI.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tut-section" id="tut-prompt-chat">
+        <div class="tut-h2">Using a prompt in a chat window</div>
+        <p class="prose" style="margin-bottom:1.5rem">The simplest way to use any case study. Works with Claude.ai, ChatGPT, Gemini, or any AI assistant.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Open a new conversation</div><div class="tut-step-desc">Go to <a href="https://claude.ai" target="_blank">claude.ai</a> (or your preferred AI assistant) and start a new chat. Each case study works best in a fresh conversation so the AI has no prior context to carry over.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Copy the prompt from the case study</div><div class="tut-step-desc">On any case study page, click the <strong>Prompt</strong> tab, then the Copy button. The prompt is a structured template with <span class="pv" style="font-family:var(--m)">[PLACEHOLDER]</span> slots you will fill in.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Fill in the placeholders</div><div class="tut-step-desc">Before sending, replace every <span style="font-family:var(--m);color:var(--teal);font-size:.85em">[PLACEHOLDER]</span> with your actual content — your document text, your specification, your questions. <strong>Do not skip placeholders or leave them blank.</strong> Each one corresponds to a decision the 5 principles require you to make.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Send and review the output</div><div class="tut-step-desc">The prompt is designed to produce structured output you can verify. Check the Human review accordion on the case study page for what to look for. For long documents, run the prompt section by section and compile the results yourself.</div></div></div>
+        <div class="tut-note"><strong>Tip:</strong> Keep the case study page open alongside your chat. The principles accordion explains why each part of the prompt is structured the way it is — useful when the output surprises you.</div>
+      </div>
+
+      <div class="tut-section" id="tut-prompt-custom">
+        <div class="tut-h2">Using a prompt as a custom chatbot</div>
+        <p class="prose" style="margin-bottom:1.5rem">A custom chatbot lets you save the prompt as a persistent system configuration, so you don't have to paste it each time. Good for tasks you run regularly or want to share with a team.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Open Claude.ai Projects</div><div class="tut-step-desc">In <a href="https://claude.ai" target="_blank">claude.ai</a>, click <strong>Projects</strong> in the sidebar, then <strong>New project</strong>. Projects allow you to set a persistent system prompt that applies to every conversation in that project.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Paste the prompt into Project Instructions</div><div class="tut-step-desc">In your new project, click <strong>Edit project instructions</strong>. Paste the full prompt from the case study. Fill in any placeholders that are fixed for your use (e.g. your extraction schema, your codebook). Leave placeholders that will vary per conversation.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Upload reference files</div><div class="tut-step-desc">If your case study uses a schema, codebook, or alias table — upload those files to the project. Claude will reference them in every conversation without you needing to paste them each time.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Start a new conversation per document or task</div><div class="tut-step-desc">Each new conversation in the project starts fresh with your system prompt active. Paste your document section, your dataset profile, or your search specification directly into the chat — the prompt structure handles the rest.</div></div></div>
+        <div class="tut-note"><strong>Also works with:</strong> The Anthropic API (set the prompt as the <code style="font-family:var(--m);font-size:.85em">system</code> parameter), or any platform that supports a system prompt field — including Poe, Dify, or Flowise.</div>
+      </div>
+
+      <div class="tut-section" id="tut-skill-claudecode">
+        <div class="tut-h2">Running a skill with Claude Code</div>
+        <p class="prose" style="margin-bottom:1.5rem"><span class="tip">Claude Code<span class="tip-box"><strong>Claude Code</strong>An agentic coding tool from Anthropic that runs in your terminal. It can read and write files, execute code, and run multi-step workflows — making it suitable for pipeline skill files that process batches of documents.</span></span> is an agentic tool that runs in your terminal. It can process files, run scripts, and execute multi-step pipelines — ideal for skill files that handle a corpus of documents.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Install Claude Code</div><div class="tut-step-desc">Claude Code requires Node.js. Install it via npm:
+          <div class="tut-code">npm install -g @anthropic-ai/claude-code</div>
+          Then authenticate: run <code style="font-family:var(--m);font-size:.85em">claude</code> and follow the login prompt. Full docs at <a href="https://docs.anthropic.com/claude-code" target="_blank">docs.anthropic.com/claude-code</a>.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Download the skill file</div><div class="tut-step-desc">On the case study page, click the <strong>Skill</strong> tab, then <strong>Download skill file</strong>. Save the <code style="font-family:var(--m);font-size:.85em">.md</code> file into a <code style="font-family:var(--m);font-size:.85em">skills/</code> folder in your project directory.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Set up your working directory</div><div class="tut-step-desc">Create a folder for the task and add your input files. For example, for thematic analysis:
+          <div class="tut-code">my-analysis/
+  skills/thematic-analysis-skill.md
+  input/document-01.txt
+  input/document-02.txt
+  codebook.yaml</div></div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Run Claude Code with the skill</div><div class="tut-step-desc">From your project directory, start Claude Code and reference the skill file:
+          <div class="tut-code">cd my-analysis
+claude
+&gt; Read skills/thematic-analysis-skill.md and follow it.</div>
+          Claude Code will read the skill, ask any clarifying questions, then execute the pipeline — processing your input files, producing outputs, and logging its work.</div></div></div>
+        <div class="tut-note"><strong>Note:</strong> Skill files include built-in review gates. Claude Code will pause at mandatory human review points and wait for your confirmation before continuing.</div>
+      </div>
+
+      <div class="tut-section" id="tut-skill-desktop">
+        <div class="tut-h2">Running a skill with Claude.ai</div>
+        <p class="prose" style="margin-bottom:1.5rem">For users who prefer a browser interface rather than the terminal. Claude.ai Projects can run skill files when you upload them as project instructions alongside your input files.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Create a new Project in Claude.ai</div><div class="tut-step-desc">At <a href="https://claude.ai" target="_blank">claude.ai</a>, click <strong>Projects → New project</strong>. Give it a name matching the task (e.g. "Thematic Analysis — Budget Documents").</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Upload the skill file as project instructions</div><div class="tut-step-desc">Download the skill file from the case study. Open <strong>Edit project instructions</strong> and paste the full contents of the skill file. This sets the operating procedure for every conversation in this project.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Upload your reference files</div><div class="tut-step-desc">Upload your codebook, schema, alias table, or any other reference file the skill requires. These will be available to Claude in every conversation within the project.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Start a conversation and paste your input</div><div class="tut-step-desc">Start a new chat. Paste your input — a document section, a dataset profile, a specification. Claude will follow the skill's procedure, pausing at review gates to ask for your confirmation.</div></div></div>
+        <div class="tut-note"><strong>Limitation:</strong> Claude.ai cannot execute code or write files to your computer. For pipeline tasks that require script generation and execution (e.g. data cleaning), use Claude Code or Gemini CLI instead.</div>
+      </div>
+
+      <div class="tut-section" id="tut-skill-gemini">
+        <div class="tut-h2">Running a skill with Gemini CLI</div>
+        <p class="prose" style="margin-bottom:1.5rem"><span class="tip">Gemini CLI<span class="tip-box"><strong>Gemini CLI</strong>Google's open-source agentic tool that runs in your terminal. Like Claude Code, it can read and write files and execute multi-step pipelines. Skill files from this site are compatible with both Claude Code and Gemini CLI.</span></span> is Google's open-source agentic terminal tool. Skill files from this site are compatible with both Claude Code and Gemini CLI — the same file works with either.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Install Gemini CLI</div><div class="tut-step-desc">
+          <div class="tut-code">npm install -g @google/gemini-cli</div>
+          Then run <code style="font-family:var(--m);font-size:.85em">gemini</code> and authenticate with your Google account. Full docs at <a href="https://github.com/google-gemini/gemini-cli" target="_blank">github.com/google-gemini/gemini-cli</a>.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Download the skill file and set up your directory</div><div class="tut-step-desc">Same as Claude Code — download the skill file and place it in a <code style="font-family:var(--m);font-size:.85em">skills/</code> folder alongside your input files.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Run Gemini CLI with the skill</div><div class="tut-step-desc">From your project directory:
+          <div class="tut-code">cd my-analysis
+gemini
+&gt; Read skills/thematic-analysis-skill.md and follow it.</div>
+          Gemini CLI will read the skill file and execute the pipeline. The procedure is identical to Claude Code — the skill files are tool-agnostic.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Check the GEMINI.md conventions</div><div class="tut-step-desc">Gemini CLI looks for a <code style="font-family:var(--m);font-size:.85em">GEMINI.md</code> file in your project root for persistent instructions. You can copy the skill file contents there if you want it to apply automatically to every session in that project.</div></div></div>
+        <div class="tut-note"><strong>Choosing between tools:</strong> Both work well. Claude Code tends to handle longer reasoning chains more reliably. Gemini CLI is free tier with a generous quota. Try both and use whichever fits your workflow.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>AI for Civic Data — An open resource for civil society organisations &amp; data practitioners</footer>
+<script>
+const GLOSSARY = [{"term": "Atomic steps", "def": "Breaking a task into explicit, ordered sub-tasks that are completed one at a time. A core principle: AI should not be asked to 'do everything at once' — each step has a defined input, output, and verification point.", "related": ["Reasoning trace", "Skill file"], "tags": ["principle"]}, {"term": "Audit log", "def": "A record of every transformation or decision made during a pipeline run, with one row per action. Includes: what changed, what it changed from, and why. The audit log is a first-class output — not an afterthought.", "related": ["Pipeline", "Skill file"], "tags": ["pipeline"]}, {"term": "Codebook", "def": "A pre-defined set of theme names and their one-line definitions, used in thematic analysis. AI codes documents against the codebook — it never generates theme names. The codebook is authored by the researcher before any AI work begins.", "related": ["Thematic analysis", "Controlled vocabulary"], "tags": ["analysis"]}, {"term": "Confidence field", "def": "A field in AI output that labels how certain the AI is about each item: typically direct_quote / paraphrase / inferred. Items labelled 'inferred' require mandatory human review before entering the final output.", "related": ["Reasoning trace", "Human review"], "tags": ["principle"]}, {"term": "Controlled vocabulary", "def": "A fixed set of valid values for a field — categories, tags, labels, status codes. AI must choose from the vocabulary; it may not invent new terms. The vocabulary is defined before AI runs, and validation rejects any unknown term at write time.", "related": ["Codebook", "Validation"], "tags": ["pipeline"]}, {"term": "Claude Code", "def": "An agentic coding tool from Anthropic that runs in your terminal. It can read and write files, execute code, and run multi-step workflows. Suitable for pipeline skill files that process batches of documents or generate and execute scripts.", "related": ["Gemini CLI", "Skill file"], "tags": ["tool"]}, {"term": "Gemini CLI", "def": "Google's open-source agentic terminal tool, analogous to Claude Code. Skill files from this site are compatible with both Claude Code and Gemini CLI — the same skill file works with either tool.", "related": ["Claude Code", "Skill file"], "tags": ["tool"]}, {"term": "Human review", "def": "The fifth principle: designing how a human will verify the result before running anything. Human review is not a final check — it is designed into the process, with mandatory gates at specific points (e.g. before a script runs, before synthesis begins).", "related": ["Review gate", "Confidence field"], "tags": ["principle"]}, {"term": "Objective", "def": "The first principle: defining what success looks like in concrete, checkable terms before touching AI. Not 'summarise this document' but 'extract all commitments naming a specific actor, obligation, and timeframe — with the paragraph reference for each.'", "related": ["Output shape", "Atomic steps"], "tags": ["principle"]}, {"term": "Output shape", "def": "The second principle: specifying the structure, format, and fields of the result before asking AI to produce it. A table with fixed columns, a JSON schema, or a numbered list with named fields. Without a specified shape, AI produces narrative summaries that are hard to verify.", "related": ["Objective", "Controlled vocabulary"], "tags": ["principle"]}, {"term": "Pipeline", "def": "A multi-stage automated process where the output of each step becomes the input of the next. Pipeline cases on this site use skill files to automate the sequence — batching, validation, and audit logging included.", "related": ["Skill file", "Audit log"], "tags": ["pipeline"]}, {"term": "Prompt", "def": "A structured text template that applies the 5 principles to a specific task. Each case study provides a prompt with [PLACEHOLDER] slots. It can be used in a chat window or saved as the base instruction for a custom chatbot.", "related": ["Skill file", "Custom chatbot"], "tags": ["artifact"]}, {"term": "Reasoning trace", "def": "The fourth principle: requiring AI to show its assumptions and interpretive choices at each step — not just its output. Implemented via a note field, a confidence field, or inline comments in generated code. Without a trace, a reviewer sees only the conclusion, not the reasoning.", "related": ["Confidence field", "Human review"], "tags": ["principle"]}, {"term": "Review gate", "def": "A defined checkpoint in a pipeline where a human must verify output before the process continues. Mandatory gates block the pipeline until the human signs off. Advisory gates recommend review but do not block. Auto-validated gates run checks deterministically.", "related": ["Human review", "Pipeline"], "tags": ["pipeline"]}, {"term": "School of Data pipeline", "def": "A seven-stage methodology for data work: Define (clarify the question and scope), Find (identify data sources), Get (acquire the data), Verify (check quality and provenance), Clean (standardise and resolve inconsistencies), Analyse (extract meaning), Present (communicate findings). Used throughout this site to locate where in the data journey each case study applies.", "related": ["Pipeline", "Audit log"], "tags": ["methodology"], "link": {"url": "https://civicliteraci.es/data-pipeline/", "label": "Full guide on the CLi website →"}}, {"term": "Skill file", "def": "A structured Markdown instruction file that defines a multi-step AI workflow. Downloaded from a case study and run with Claude Code, Claude.ai, or Gemini CLI. Contains the operating procedure, review gates, output specifications, and tool invocations for a complete pipeline task.", "related": ["Claude Code", "Gemini CLI", "Pipeline"], "tags": ["artifact"]}, {"term": "System prompt", "def": "A persistent instruction set that is sent to an AI model before every conversation. Used when setting up a custom chatbot: the case study prompt becomes the system prompt, so you don't need to paste it each time.", "related": ["Prompt", "Custom chatbot"], "tags": ["tool"]}, {"term": "Validation", "def": "An automated check that runs after AI produces output, verifying it meets defined constraints: required fields are present, values are from the controlled vocabulary, references are non-empty. Validation rejects bad output immediately — it does not wait for a human to notice.", "related": ["Controlled vocabulary", "Review gate"], "tags": ["pipeline"]}];
+
+const CASES = [{"id": "analyse-spreadsheet", "title": "Analysing a Budget Spreadsheet", "shortDesc": "Navigate, interrogate and surface patterns in a government budget spreadsheet — without trusting any AI-produced number unchecked.", "context": "Government budget spreadsheets are large, inconsistently structured, and contain implicit logic in row hierarchies. The most important principle — AI must never produce a number that will be published. Its role is navigation and pattern spotting — the analyst computes.", "mode": "prompt-guided", "pipelineTags": ["analyse", "verify"], "topicTags": ["budget", "spreadsheet", "fiscal"], "material": "a spreadsheet", "hasSkill": false, "risks": [{"risk": {"title": "AI numbers taken at face value", "body": "AI computes 'total education budget = $42M' — plausible, but based on an incorrect row range or wrong column."}, "good": {"title": "AI provides formula, analyst computes", "body": "AI identifies which rows and columns to use and shows the formula. The analyst applies it in the spreadsheet and verifies the result."}}, {"risk": {"title": "Wrong unit of analysis", "body": "AI aggregates at programme level when each row is a sub-programme line — meaningful but wrong."}, "good": {"title": "Unit confirmed before any aggregation", "body": "Structure understanding is a separate first step. The analyst confirms what each row represents before posing any analytical question."}}, {"risk": {"title": "Anomalies framed as findings", "body": "'The transport budget doubled' — may be error, reclassification, or genuine. The confident framing removes the uncertainty."}, "good": {"title": "Anomalies flagged for investigation", "body": "AI lists anomalies as starting points. Each is followed up with direct spreadsheet inspection before becoming a claim."}}, {"risk": {"title": "No traceability for published figures", "body": "A number appears in a report with no record of which rows produced it."}, "good": {"title": "Row citations required in every output", "body": "AI must cite rows and columns used for every statement. No citation, no output."}}], "principles": [{"name": "Objective", "tag": "Define the analytical question before opening the spreadsheet", "body": "Not 'analyse the budget' but 'determine whether the education ministry's capital budget grew or shrank in real terms between 2021 and 2024.' The more specific the question, the more checkable the answer.", "ex1": {"lbl": "Strong analytical objective", "txt": "Question: What share of total budget went to health in each year 2020–2024?\nUnit: Ministry-level rows only (exclude sub-programme lines)\nOutput: year | health_budget | total_budget | share%"}}, {"name": "Output shape", "tag": "Specify the answer format before asking the question", "body": "For each analytical question, specify what a complete answer looks like — a number with percentage change, a ranked list, a flag list. If AI answers with a narrative instead of the format you specified, it has not answered the question.", "ex1": {"lbl": "Output shape for a comparison", "txt": "year | ministry | budget_current | budget_constant | change_%\nSource: rows [specify after structure review]"}, "warn": "If AI answers a specific question with a narrative instead of your specified format, ask again with the format requirement explicit."}, {"name": "Atomic steps", "tag": "Structure first — questions second — anomalies last", "body": "Step 1: ask AI to describe the structure only — no calculations. Step 2: verify the structure yourself by reading the spreadsheet. Step 3: now ask analytical questions. Step 4: ask for anomalies as a separate final step.", "ex1": {"lbl": "Step 1 instruction", "txt": "Describe the structure only. Do not compute anything.\nFor each sheet: what it contains, what each row represents, column names, formula or subtotal rows."}}, {"name": "Reasoning trace", "tag": "AI must show rows and columns behind every statement", "body": "For every analytical output, AI must cite which rows it used, which it excluded, and why — the formula, not the result. An AI statement without row references is unverifiable and unpublishable.", "ex1": {"lbl": "Trace instruction", "txt": "State which rows you are summing, which column, which rows excluded and why.\nGive me the formula. Do not compute the result yourself."}, "warn": "AI must never produce a final figure for a published output. If it does, treat it as a formula to verify — not a result to use."}, {"name": "Human review", "tag": "Every published number is computed by a human", "body": "Any figure in a published output must be computed by the analyst directly in the spreadsheet, using AI's row references as a guide. Key figures should be computed twice — by the analyst and by a formula — and reconciled.", "warn": "The most common error in AI-assisted spreadsheet analysis is using AI's computed figure directly. AI finds the rows. You sum them."}], "prompt": "You are a fiscal navigation assistant. Help me find information. Do not compute final figures.\n\n# Step 1 — Structure only (no calculations)\nDescribe:\n— Each sheet: what it contains, what each row represents\n— Column hierarchy and key columns\n— Any formula rows, subtotals, or totals rows\n— Whether row unit differs between sheets\n\nI will confirm the structure before we proceed.\n\n# Step 2 — Navigation (after structure confirmed)\n[PASTE YOUR ANALYTICAL QUESTION]\n\n— Which rows are relevant, which to exclude and why\n— Which column to use\n— The formula I should apply — do NOT compute the result yourself\n— If multiple calculations needed, give each formula separately\n\n# Step 3 — Anomalies\nList up to 5 rows or values that appear unusual. For each: what looks anomalous and what I should check directly.\n"}, {"id": "clean-dataset", "title": "Cleaning a Messy Dataset", "shortDesc": "Standardise values, resolve inconsistencies, detect outliers and document every transformation — with a full audit trail.", "context": "Datasets from government portals, FOI responses or web scraping are rarely clean. The key principle — AI should never touch the data directly. It should produce code and decisions that a human can read, approve, and trace before a single value is changed.", "mode": "pipeline", "pipelineTags": ["clean", "verify"], "topicTags": ["data cleaning", "CSV", "government data"], "material": "a messy dataset", "hasSkill": true, "skillDesc": "Generates a Python/pandas cleaning script from a data profile and specification, executes it, and outputs an audit log with one row per transformation.", "skillFile": "dataset-cleaning-skill.md", "risks": [{"risk": {"title": "Undocumented transformations", "body": "AI cleans the data directly — changes are invisible, unauditable, and irreversible."}, "good": {"title": "All transformations logged before execution", "body": "AI generates a script. The script runs and logs every transformation — row, column, before, after, reason — before writing a single cell."}}, {"risk": {"title": "Cleaning rules invented by AI", "body": "AI decides what 'clean' means, importing assumptions from training data that may not match this context."}, "good": {"title": "Human writes the specification first", "body": "AI implements a specification written by the analyst. The cleaning rules are authored by a human — not generated by AI."}}, {"risk": {"title": "Original data modified", "body": "When AI cleans in-place, the ability to trace a finding back to the raw source is lost."}, "good": {"title": "Original file structurally untouchable", "body": "The script writes only to a new output file. The original cannot be modified — not by instruction, but by the code's structure."}}, {"risk": {"title": "Ambiguity silently resolved", "body": "Is '0' a missing value or valid zero? AI decides silently, embedding a judgment no human ever made."}, "good": {"title": "Ambiguous cases surfaced as REVIEW comments", "body": "The script adds"}}], "principles": [{"name": "Objective", "tag": "Define 'clean' in concrete, checkable terms for this dataset", "body": "Not 'clean this dataset' but 'standardise company_name to title case, resolve the 47 known aliases to canonical names per alias-table.csv, convert date columns to ISO 8601, and flag rows where revenue is negative.' Every rule must be stated before AI is involved.", "ex1": {"lbl": "Specification format", "txt": "Column: company_name\nRule: title case, strip punctuation, resolve aliases per alias-table.csv\nEdge cases: 'N/A' or blank → flag as MISSING, do not drop"}}, {"name": "Output shape", "tag": "Two outputs — cleaned file and audit log", "body": "The cleaned dataset and the audit log are both required. The audit log is what makes the cleaning verifiable and the analysis defensible. Without it you cannot explain why a value changed, or challenge a finding that depends on a cleaning decision.", "ex1": {"lbl": "Audit log columns", "txt": "row_index | column | original_value | new_value | transformation_type | reason"}, "warn": "A cleaning script that produces only the clean file is incomplete. The audit log is not optional."}, {"name": "Atomic steps", "tag": "Profile → specify → generate → review → execute", "body": "Five steps, none skippable. Profile the raw data. Write the specification from the profile. Ask AI to generate the script. Read the script. Then execute on a 10% sample first. The most important step is reading the script — this is where you catch rules AI implemented wrongly before they touch the data.", "ex1": {"lbl": "Required sequence", "txt": "1. df.describe() + df.dtypes + df.isnull().sum()\n2. Write specification\n3. AI generates clean.py\n4. Human reads clean.py\n5. Execute on 10% sample first"}}, {"name": "Reasoning trace", "tag": "Every transformation must carry a reason", "body": "Ask AI to add a comment above every transformation block explaining the decision, and a reason field in the audit log. A transformation without a reason is a decision without accountability.", "ex1": {"lbl": "Comment format", "txt": "# Rule: standardise date format to ISO 8601\n# Source: specification line 4\n# Edge case: entries with time → truncate to date only\ndf['date'] = pd.to_datetime(df['date']).dt.date"}}, {"name": "Human review", "tag": "Read the script before it runs", "body": "Read the generated script before it runs. Every transformation must match the specification. Any transformation you didn't specify is a flag. After execution — re-profile and compare to baseline. Any unexpected change requires investigation.", "warn": "Never run AI-generated data transformation code you have not read. The whole point of asking AI to generate code rather than transform directly is that you can read it first."}], "prompt": "Generate a Python pandas cleaning script. Do not clean data yourself — generate code a human will read before running.\n\n# Data profile\n[PASTE: df.describe(), df.dtypes, df.isnull().sum(), df[col].value_counts() for categorical columns]\n\n# Cleaning specification\n[PASTE: one rule per column, with edge cases noted]\n\n# Requirements\n— NEVER modify the original file; write only to clean_output.csv\n— Produce audit_log.csv: row_index | column | original_value | new_value | transformation_type | reason\n— Add a comment above every transformation block: rule, source in spec, edge case handling\n— End with a summary print: rows processed, transformations applied, nulls remaining\n— For any case not covered by specification, add # REVIEW and implement the conservative option\n"}, {"id": "merge-datasets", "title": "Merging Two Datasets Without a Shared Key", "shortDesc": "Match records across datasets that share an entity — company, location or project — but have no common unique identifier.", "context": "EITI reports, beneficial ownership registries, company databases — these datasets were never designed to be linked. Matching by entity name is error-prone. The principles here determine whether the resulting merged dataset is trustworthy enough to publish or cite.", "mode": "pipeline", "pipelineTags": ["clean", "verify"], "topicTags": ["record linkage", "entity matching", "EITI"], "material": "two datasets to link", "hasSkill": true, "skillDesc": "Implements a fuzzy-match record linkage pipeline with a human-in-the-loop review queue for ambiguous matches.", "skillFile": "record-linkage-skill.md", "risks": [{"risk": {"title": "Silent false matches", "body": "AI matches 'Shell Nigeria' to 'Shell Petroleum' as obvious — but the correct entity may be a third, distinct legal entity."}, "good": {"title": "Ambiguous matches routed to humans", "body": "Any match below the High confidence threshold goes to a review queue. A human sees both records and makes the decision. Nothing is silently resolved."}}, {"risk": {"title": "Inconsistent normalisation", "body": "AI expands 'Ltd' in some rows but not others, producing false non-matches that disappear into the unmatched pile."}, "good": {"title": "Normalisation runs deterministically before AI", "body": "Punctuation, case, legal suffixes, abbreviations — resolved by a deterministic step before AI sees any text. AI only scores normalised pairs."}}, {"risk": {"title": "No audit trail on merged pairs", "body": "The merged dataset contains no record of which matches were auto-accepted and which a human confirmed."}, "good": {"title": "Full decision log for every pair", "body": "Every pair in the merged dataset has an audit entry: confidence tier, evidence, decision source (auto/human), timestamp."}}, {"risk": {"title": "Unmatched records silently dropped", "body": "Records that matched nothing disappear without explanation, potentially hiding a scope problem."}, "good": {"title": "Unmatched records are a required output", "body": "Unmatched records from both datasets are surfaced and reviewed. A large unmatched set stops the pipeline."}}], "principles": [{"name": "Objective", "tag": "Define the match key and entity type precisely", "body": "Specify: which column in dataset A should match which column in dataset B, and what kind of entity (company name, person name, place name). The entity type determines the matching algorithm. A vague objective produces a pipeline designed for no entity type in particular.", "ex1": {"lbl": "Objective template", "txt": "Match: dataset-a.company_name → dataset-b.legal_entity_name\nEntity type: company name (English + French, may contain legal suffixes)\nAcceptable false match rate: 0% — all ambiguous matches to human review"}}, {"name": "Output shape", "tag": "Three outputs — merged file, unmatched records, audit log", "body": "The merged dataset, the unmatched records, and the match audit log are all required. The review queue is a first-class deliverable. Without it, you have no record of which matches were human-confirmed.", "ex1": {"lbl": "Three required outputs", "txt": "merged.csv — matched pairs + confidence tier + decision source\nunmatched-a.csv — records from A with no match\nunmatched-b.csv — records from B with no match\naudit.csv — full decision log"}, "warn": "A merged dataset without an audit log cannot be cited in published analysis."}, {"name": "Atomic steps", "tag": "Normalise first, score second, decide third", "body": "Normalisation and scoring must be kept separate. Normalisation is deterministic — it runs before AI sees any text. Scoring is where AI earns its place. Deciding is either automatic (high confidence) or human (medium/low).", "ex1": {"lbl": "Step sequence", "txt": "1. Profile both entity columns\n2. Define normalisation rules\n3. Run normalisation (deterministic)\n4. Generate candidate pairs (blocking)\n5. AI scores each pair\n6. Auto-accept High; route Medium/Low to review queue\n7. Human reviews queue\n8. Build merged dataset"}}, {"name": "Reasoning trace", "tag": "AI must show what it matched and why", "body": "For every candidate pair, AI must output which sub-components matched, the normalised values compared, and a one-sentence explanation of the score. The human reviewer uses this evidence to make the decision.", "ex1": {"lbl": "Scoring output fields", "txt": "\"normalised_a\": \"shell nigeria ltd\",\n\"normalised_b\": \"shell nigeria petroleum development\",\n\"similarity_score\": 0.72,\n\"matched_on\": [\"shell\", \"nigeria\"],\n\"score_rationale\": \"2/3 tokens in A match 2/5 in B; 'ltd' vs 'petroleum development' differs\""}}, {"name": "Human review", "tag": "Medium and Low matches require 100% human review", "body": "This is a structural guarantee, not a guideline. No Medium or Low confidence match enters the merged dataset without a human decision. For High confidence matches, a 10% spot-check is required before the final merge.", "warn": "If you are under time pressure and tempted to skip the review queue — that is precisely when errors enter the data and persist into analysis."}], "prompt": "You are a record linkage assistant. Score candidate entity pairs only — do not make match decisions.\n\n# Entity type and normalisation context\nEntity type: [company | person | place]\nKnown issues in dataset A: [e.g. mixed French/English, abbreviations]\nKnown issues in dataset B: [e.g. all-caps, legal suffix variations]\n\n# Output per pair — one JSON object per line\n{\n  \"id_a\": \"<row ID from A>\",\n  \"id_b\": \"<row ID from B>\",\n  \"normalised_a\": \"<value as normalised>\",\n  \"normalised_b\": \"<value as normalised>\",\n  \"similarity_score\": 0.0-1.0,\n  \"matched_on\": [\"<which tokens or components matched>\"],\n  \"score_rationale\": \"<one sentence explaining the score>\",\n  \"flag\": \"<any anomaly the human reviewer should know, or null>\"\n}\n\n# Candidate pairs\n[PASTE CANDIDATE PAIRS HERE]\n"}, {"id": "search-datasets", "title": "Searching for Civic Datasets", "shortDesc": "Formulate targeted search strategies to find relevant datasets from government portals, international databases and open data repositories.", "context": "Finding the right dataset is often the hardest part of civic data work. Government portals have inconsistent metadata, international databases use different terminologies, and relevant data hides in unexpected formats. AI can generate vocabulary and map the source landscape — but it cannot verify what it finds.", "mode": "prompt-guided", "pipelineTags": ["define", "find"], "topicTags": ["open data", "research", "government portals"], "material": "datasets to locate", "hasSkill": false, "risks": [{"risk": {"title": "Confidently cited non-existent datasets", "body": "AI names a dataset that doesn't exist, or exists but lacks the claimed variables — with the same tone as real sources."}, "good": {"title": "Every cited source manually verified", "body": "AI-suggested sources are candidates. Every dataset in the source inventory must be accessed and assessed before it can be cited."}}, {"risk": {"title": "Training-data ceiling", "body": "AI's source map is bounded by its training data — missing recent datasets, non-English portals, smaller national bodies."}, "good": {"title": "AI generates vocabulary, humans search", "body": "AI produces search terms and a source landscape. Humans execute the searches, reaching portals and FOI registers AI cannot access."}}, {"risk": {"title": "Vague specification, vague results", "body": "'Find data on extractives' returns well-known databases that may not match the specific unit, geography, or period needed."}, "good": {"title": "Researcher writes the specification first", "body": "The data specification — unit, geography, period, essential variables — is written before AI is involved."}}, {"risk": {"title": "AI doesn't flag what it doesn't know", "body": "AI suggests the closest plausible thing rather than stating it doesn't know of a matching dataset."}, "good": {"title": "Gaps are a required output", "body": "AI must explicitly name which aspects of the specification are unlikely to be covered by any public dataset."}}], "principles": [{"name": "Objective", "tag": "A data specification, not a topic", "body": "Not 'find data about mining' but 'company-level data on extractive sector revenues paid to sub-national governments in Ghana, 2015–2023, disaggregated by tax type.' Without this, AI cannot tell you what it does and does not know.", "ex1": {"lbl": "Specification template", "txt": "Unit: company-payment records (not aggregate)\nGeography: Ghana, sub-national\nPeriod: 2015–2023\nEssential: company, amount, payment type, recipient government\nNice-to-have: project name, commodity"}}, {"name": "Output shape", "tag": "A source inventory table — not a list of suggestions", "body": "The output is a source inventory table with fixed columns. AI-suggested sources are candidates — they enter the table only after human verification.", "ex1": {"lbl": "Source inventory columns", "txt": "name | url | coverage | granularity | last_updated | license | limitations | verified_by | verified_date"}, "warn": "AI-suggested sources that have not been manually accessed cannot appear in the source inventory."}, {"name": "Atomic steps", "tag": "Vocabulary first, landscape second, search third", "body": "Three separate steps. First: AI generates search vocabulary. Second: AI maps the source landscape. Third — the human step — execute the searches and assess what you find. Do not combine these steps.", "ex1": {"lbl": "Step sequence", "txt": "1. AI generates vocabulary (15–20 terms)\n2. AI produces source landscape\n3. Human executes searches using vocabulary\n4. Human assesses each result against specification\n5. Human builds source inventory"}}, {"name": "Reasoning trace", "tag": "AI must explain why each source is or is not relevant", "body": "When AI produces its source landscape, ask it to explain why each source is likely to hold your target data and to flag sources where it is uncertain. These explanations are your audit trail for the search strategy.", "ex1": {"lbl": "Landscape entry format", "txt": "Source: EITI International Secretariat\nURL: eiti.org/data\nRationale: Publishes EITI reports containing company-level payment data.\nUncertainty: Sub-national disaggregation varies by country."}}, {"name": "Human review", "tag": "Every cited dataset manually verified", "body": "Visit the URL. Look at the actual data. Confirm coverage dates, granularity, and that essential variables are present. An AI-suggested dataset not manually accessed cannot be cited.", "warn": "It is faster to verify 10 sources carefully than to cite 20 and discover later that half do not contain what you needed."}], "prompt": "You are a research librarian specialising in civic and government data.\n\n# Data specification (analyst-provided — do not modify)\n[PASTE YOUR SPECIFICATION]\n\n# Step 1 — VOCABULARY\nList 15–20 search terms: official terminology, synonyms, acronyms in [LANGUAGE(S)].\nFor each: one sentence on why it is relevant.\n\n# Step 2 — SOURCE LANDSCAPE\nList likely data holders: agencies, international bodies, monitoring initiatives.\nFor each: name, why they likely hold this data, known limitations.\nDo not invent URLs. Note only sources you have strong reason to believe exist.\n\n# Step 3 — KNOWN GAPS\nIdentify aspects of the specification unlikely to be covered by any publicly available dataset.\nExplain why. This is required output — do not omit it.\n"}, {"id": "summarise-policy", "title": "Summarising Policy Documents", "shortDesc": "Extract key commitments, obligations and recommendations from lengthy government reports and policy papers.", "context": "Civil society organisations routinely monitor policy documents — government strategies, budget frameworks, legislative proposals — but their volume and density makes systematic review difficult. The question for any AI-assisted task is: what precisely do I want, what should the result look like, and how will I know if it is wrong?\n", "mode": "prompt-guided", "pipelineTags": ["analyse", "present"], "topicTags": ["policy", "documents", "research"], "material": "policy documents", "hasSkill": false, "risks": [{"risk": {"title": "Invented commitments", "body": "AI produces commitments that sound plausible but are not in the document — especially in dense or ambiguous sections."}, "good": {"title": "Mandatory source reference per item", "body": "Every item must carry a paragraph reference. Any extraction without one is rejected, making invention impossible to hide."}}, {"risk": {"title": "Invisible confidence", "body": "AI mixes direct quotes, paraphrases, and inferences with no signal about which is which."}, "good": {"title": "Explicit confidence field", "body": "Each item carries a direct_quote / paraphrase / inferred label. Inferred items are flagged for mandatory human review."}}, {"risk": {"title": "AI-counted totals", "body": "'This document contains 14 commitments' — AI counts are unreliable and may duplicate, miss, or miscategorise silently."}, "good": {"title": "Humans count from validated items", "body": "Counts are computed after human validation of individual items. AI never produces aggregate numbers."}}, {"risk": {"title": "Inconsistent structure across documents", "body": "Each open-ended run produces a different narrative shape, making corpus-level comparison impossible."}, "good": {"title": "Schema defined once, applied everywhere", "body": "The extraction schema — categories, field names, format — is defined by the analyst and applied identically to every document."}}], "principles": [{"name": "Objective", "tag": "What precisely are you trying to produce?", "body": "Not \"summarise this report\" but \"extract all commitments made by the national government on extractives revenue transparency, with the paragraph number of each.\" The precision of your objective determines the quality of the output. A vague objective produces a plausible-sounding summary that may miss everything important.", "ex1": {"lbl": "Weak objective", "txt": "Summarise the key points of this policy document"}, "ex2": {"lbl": "Strong objective", "txt": "Extract every commitment in this document that names a specific actor, obligation, and timeframe — with the paragraph reference for each"}}, {"name": "Output shape", "tag": "What does the result look like?", "body": "Provide a template — a table with fixed columns, a JSON schema, or a numbered list with named fields. Without a specified shape, AI produces narrative summaries that are hard to compare across documents. The shape is also your verification checklist — each field you define is something you will check.", "ex1": {"lbl": "Output shape to specify", "txt": "category | description | section_ref | confidence | note"}, "warn": "If AI produces a shape you did not specify, the objective was underspecified — ask again with the format requirement explicit."}, {"name": "Atomic steps", "tag": "Process section by section, not all at once", "body": "Ask AI to process one section of the document at a time. Each section is one unit of work — AI identifies relevant content, extracts items against the schema, and flags anything uncertain. Compile only after all sections are processed.", "ex1": {"lbl": "Atomic step instruction", "txt": "Process only section 3.2. Extract items matching the schema. Do not refer to other sections."}}, {"name": "Reasoning trace", "tag": "Require AI to explain every interpretive choice", "body": "Ask AI to add a confidence field and a note field to every item. The note is where AI explains any interpretive choice — why it classified something as a commitment rather than an aspiration. Without this, you see only the conclusion, not the reasoning.", "ex1": {"lbl": "Trace instruction", "txt": "For any item you are uncertain about, set confidence to \"inferred\" and explain your reasoning in the note field."}, "warn": "Any item marked \"inferred\" must be human-reviewed before it enters the output."}, {"name": "Human review", "tag": "Design the verification before you run anything", "body": "Define your review process before starting. Every numeric value (dates, budgets, percentages) is manually verified against the source text. All inferred-confidence items are reviewed. A 20% random spot-check of direct-quote items is run.", "ex1": {"lbl": "Review checklist", "txt": "1. Verify all [VERIFY] items against source text\n2. Review all inferred-confidence items\n3. Spot-check 20% of direct-quote items\n4. Confirm all section references are correct"}}], "prompt": "You are an extraction assistant. Do not summarise freely — fill the schema only.\n\n# Extraction schema (fixed — do not invent new categories)\nCOMMITMENT — An explicit pledge or obligation made by an actor\nACTOR — The entity responsible\nTIMELINE — Any deadline or timeframe\nMONITORING — Any mechanism for tracking progress\nFINANCING — Any budget, funding, or resource commitment\n\n# Output — one JSON object per line\n{\n  \"category\": \"<one of the five above>\",\n  \"description\": \"<plain language description>\",\n  \"section_ref\": \"<paragraph or section number — REQUIRED>\",\n  \"confidence\": \"direct_quote | paraphrase | inferred\",\n  \"note\": \"<explain any interpretive choice, or null>\"\n}\n\n# Rules\n— Never use a category not listed above\n— Never leave section_ref empty\n— Mark any number (date, budget, %) with [VERIFY] in the note field\n— Set confidence to \"inferred\" if you are not quoting or paraphrasing directly\n\n# Section to process\n[PASTE SECTION TEXT HERE]\n"}, {"id": "thematic-analysis", "title": "Thematic Analysis Across a Corpus", "shortDesc": "Identify recurring themes, contradictions and silences across policy papers from multiple actors or countries.", "context": "Comparing what different governments or donors say about a topic requires holding patterns across dozens of documents simultaneously. The risk here is AI inventing cross-document connections not grounded in individual document evidence.", "mode": "pipeline", "pipelineTags": ["analyse"], "topicTags": ["research", "policy", "corpus"], "material": "a corpus of reports", "hasSkill": true, "skillDesc": "Automates the per-document coding pass, builds the comparative matrix deterministically, and produces a structured findings report with full citation trail.", "skillFile": "thematic-analysis-skill.md", "risks": [{"risk": {"title": "Post-hoc theme generation", "body": "Without a codebook, AI generates themes that fit the corpus — answering AI's question, not the researcher's."}, "good": {"title": "Researcher writes the codebook first", "body": "Themes are defined by the research question before any AI work. AI codes against them — it does not generate them."}}, {"risk": {"title": "Cross-document hallucination", "body": "AI codes document B against what it absorbed from document A, inventing convergences not in either text."}, "good": {"title": "Isolated per-document coding", "body": "The per-document prompt forbids references to other documents. Cross-document synthesis only happens after a validated matrix is built."}}, {"risk": {"title": "Theme name drift", "body": "'Digital governance', 'digital_governance', 'digital gov' — AI drifts on terminology, making the matrix incomparable."}, "good": {"title": "Controlled vocabulary enforced at write time", "body": "Any coding entry whose theme field is not in the codebook is rejected immediately — not reviewed after."}}, {"risk": {"title": "AI-compiled matrix", "body": "AI compiles the matrix itself, silently dropping low-evidence cells or inventing entries where evidence is thin."}, "good": {"title": "Matrix built deterministically", "body": "The matrix is a mechanical join of validated per-document codings. AI never aggregates."}}], "principles": [{"name": "Objective", "tag": "Define corpus and analytical frame before starting", "body": "Not \"analyse these papers\" but \"code these 14 documents against these 6 themes and produce a comparative matrix.\" Both parts — the corpus and the themes — must be defined by the researcher. AI generates neither.", "ex1": {"lbl": "Objective template", "txt": "Code [N] documents from [actors/years] against codebook [name].\nProduce: per-document codings + comparative matrix + synthesis.\nDo not generate new themes."}}, {"name": "Output shape", "tag": "The matrix is the primary deliverable", "body": "The primary deliverable is a structured matrix — documents as rows, themes as columns, evidence excerpts as cells. Define the columns before running the analysis. The synthesis narrative is downstream of the matrix — it cannot be trusted if the matrix hasn't been validated.", "ex1": {"lbl": "Matrix shape", "txt": "rows: document filenames\ncols: [theme1, theme2, ...]\ncells: direct quote + paragraph reference"}, "warn": "AI must not build the matrix. It is a deterministic join of per-document codings — built by a tool, not AI."}, {"name": "Atomic steps", "tag": "Coding and synthesis are two completely separate passes", "body": "Separate the coding pass from the synthesis pass. Run all per-document coding. Validate. Build the matrix. Only then run synthesis. Mixing coding and synthesis is the primary failure mode.", "ex1": {"lbl": "Required sequence", "txt": "1. Code doc A → validate\n2. Code doc B → validate\n...\n3. Build matrix (tool, not AI)\n4. Human reviews matrix\n5. Synthesis pass"}}, {"name": "Reasoning trace", "tag": "Confidence and note per coding entry", "body": "Ask AI to produce a confidence field and a note for every coding entry. High means direct quote. Medium means paraphrase with context. Low means inferred. The note explains any interpretive choice. Low-confidence entries must be human-reviewed before the matrix is finalised.", "ex1": {"lbl": "Trace fields", "txt": "\"confidence\": \"medium\",\n\"note\": \"Document uses 'oversight mechanism' — classified under MONITORING theme based on context\""}}, {"name": "Human review", "tag": "Two mandatory gates before synthesis", "body": "Gate 1 — before coding begins — review and sign off on the codebook. Ambiguous definitions produce inconsistent codings. Gate 2 — before synthesis — spot-check 10% of matrix cells against the original source. Any cell anchoring a key finding must be personally verified.", "warn": "Do not run the synthesis pass until both gates are complete."}], "prompt": "You are performing systematic thematic coding. Code THIS document against the codebook only. Do not reference other documents.\n\n# Codebook — use ONLY these names, exactly as written\n[PASTE YOUR THEMES WITH ONE-LINE DEFINITIONS]\n\n# Output — a JSON array\n{\n  \"theme\": \"<exact name from codebook>\",\n  \"evidence\": \"<direct quote — not paraphrase>\",\n  \"paragraph_ref\": \"<section or page>\",\n  \"confidence\": \"high | medium | low\",\n  \"note\": \"<interpretive choice, or null>\"\n}\n\"unlisted_themes\": [\"<themes observed but not in codebook>\"]\n\n# Rules\n— Never use a theme name not in the codebook\n— Never omit evidence or paragraph_ref\n— Never reference other documents\n\n# Document: [FILENAME]\n[DOCUMENT TEXT]\n"}];
+
+// ── STATE ──
+const ALL_PIPE=['define','find','get','verify','clean','analyse','present'];
+const PNAMES=['Objective','Output shape','Atomic steps','Reasoning trace','Human review'];
+
+// ── NAV ──
+function show(page){
+  ['index','detail','glossary','tutorial'].forEach(p=>{
+    document.getElementById('view-'+p).classList.toggle('active',p===page);
+  });
+  ['index','glossary','tutorial'].forEach(p=>{
+    document.getElementById('nl-'+p)?.classList.toggle('on',p===page);
+  });
+  if(page==='glossary') renderGlos();
+  if(page==='tutorial') showTut('principles');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── MAD-LIB ──
+// Map: pipeline step → materials available at that step (matching case material fields)
+const STEP_MATERIALS = {
+  define:   ["datasets to locate"],
+  find:     ["datasets to locate"],
+  verify:   ["a messy dataset","two datasets to link"],
+  clean:    ["a messy dataset","two datasets to link"],
+  analyse:  ["policy documents","a corpus of reports","a spreadsheet"],
+  present:  ["policy documents","a corpus of reports","a spreadsheet"],
+};
+const STAGE_LABELS = {
+  define:"Define",find:"Find",verify:"Verify",
+  clean:"Clean",analyse:"Analyse",present:"Present"
+};
+
+let mlStage='', mlMaterial='';
+
+function initML(){
+  // Stage dropdown — always all steps
+  const stageDD = document.getElementById('ml-stage-dd');
+  stageDD.innerHTML = Object.entries(STAGE_LABELS).map(([v,l])=>
+    `<span class="ml-option" onclick="setMLStage('${v}')">${l}</span>`
+  ).join('') + `<span class="ml-option rst" onclick="setMLStage('')">any</span>`;
+
+  rebuildMaterialDD();
+}
+
+function rebuildMaterialDD(){
+  const matDD = document.getElementById('ml-material-dd');
+  const materials = mlStage
+    ? (STEP_MATERIALS[mlStage] || [])
+    : [...new Set(CASES.map(c=>c.material))];
+  matDD.innerHTML = materials.map(m=>
+    `<span class="ml-option ${m===mlMaterial?'sel':''}" onclick="setMLMaterial('${m}')">${m}</span>`
+  ).join('') + `<span class="ml-option rst" onclick="setMLMaterial('')">any material</span>`;
+}
+
+function setMLStage(val){
+  mlStage = val;
+  if(val && STEP_MATERIALS[val] && mlMaterial && !STEP_MATERIALS[val].includes(mlMaterial)){
+    mlMaterial = '';
+  }
+  const trigger = document.querySelector('#ml-stage .ml-trigger');
+  trigger.innerHTML = (val ? STAGE_LABELS[val] : 'any') + '<span class="ml-arrow">▾</span>';
+  trigger.classList.toggle('has-value', !!val);
+  document.getElementById('ml-stage').classList.remove('open');
+  rebuildMaterialDD();
+  const matTrigger = document.querySelector('#ml-material .ml-trigger');
+  matTrigger.innerHTML = (mlMaterial || 'any material') + '<span class="ml-arrow">▾</span>';
+  matTrigger.classList.toggle('has-value', !!mlMaterial);
+  rc();
+}
+
+function setMLMaterial(val){
+  mlMaterial = val;
+  const trigger = document.querySelector('#ml-material .ml-trigger');
+  trigger.innerHTML = (val || 'any material') + '<span class="ml-arrow">▾</span>';
+  trigger.classList.toggle('has-value', !!val);
+  document.getElementById('ml-material').classList.remove('open');
+  rebuildMaterialDD();
+  rc();
+}
+
+function toggleML(blankId){
+  const blank = document.getElementById(blankId);
+  const wasOpen = blank.classList.contains('open');
+  document.querySelectorAll('.ml-blank').forEach(b=>b.classList.remove('open'));
+  if(!wasOpen) blank.classList.add('open');
+}
+
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.ml-blank')) document.querySelectorAll('.ml-blank').forEach(b=>b.classList.remove('open'));
+});
+
+// ── FILTER ──
+function mf(c){
+  if(mlStage && !c.pipelineTags.includes(mlStage)) return false;
+  if(mlMaterial && c.material !== mlMaterial) return false;
+  const q=document.getElementById('si').value.trim().toLowerCase();
+  if(q){
+    const s=(c.title+' '+c.shortDesc+' '+c.topicTags.join(' ')+' '+c.pipelineTags.join(' ')+' '+c.material).toLowerCase();
+    if(!q.split(/\s+/).every(w=>s.includes(w))) return false;
+  }
+  return true;
+}
+
+function rc(){
+  const fl=CASES.filter(mf);
+  document.getElementById('gc').innerHTML=`<strong>${fl.length}</strong> of ${CASES.length} case studies`;
+  const g=document.getElementById('cg');
+  if(!fl.length){g.innerHTML='<div class="es">No case studies match.</div>';return}
+  g.innerHTML=fl.map(c=>{
+    const pipeStrip=ALL_PIPE.map(p=>`<span class="c-pipe-step ${c.pipelineTags.includes(p)?'on-'+p:''}">${p[0].toUpperCase()+p.slice(1)}</span>`).join('');
+    const tt=c.topicTags.map(t=>`<span class="tag tt">${t}</span>`).join('');
+    return`<div class="cc" onclick="sd('${c.id}')" style="--ca:${c.mode==='pipeline'?'var(--amber)':'var(--teal)'}">
+      <div class="ctit">${c.title}</div>
+      <div class="cdesc">${c.shortDesc}</div>
+      <div class="c-pipe">${pipeStrip}</div>
+      <div class="ctags">${tt}</div>
+      <div class="cf"><span class="csk ${c.hasSkill?'y':''}">${c.hasSkill?'⬇ Skill available':'· Prompt only'}</span><span class="car">→</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── DETAIL ──
+function sd(id){
+  const c=CASES.find(x=>x.id===id); if(!c)return;
+  const pbar=ALL_PIPE.map(p=>`<div class="pstep ${c.pipelineTags.includes(p)?'on':''}">${p[0].toUpperCase()+p.slice(1)}</div>`).join('');
+  const riskB=`<div class="rc-cols">
+    <div class="rc-col naive"><div class="rc-head">Without these principles</div>
+      <div class="rc-items">${c.risks.map(r=>`<div class="rc-item"><div><strong>${r.risk.title}</strong>${r.risk.body}</div></div>`).join('')}</div></div>
+    <div class="rc-col good"><div class="rc-head">Applying the principles</div>
+      <div class="rc-items">${c.risks.map(r=>`<div class="rc-item"><div><strong>${r.good.title}</strong>${r.good.body}</div></div>`).join('')}</div></div>
+  </div>`;
+  const princH=c.principles.map((p,i)=>{
+    const ex1=p.ex1?`<div class="pa-ex"><span class="lbl">${p.ex1.lbl}</span>${p.ex1.txt}</div>`:'';
+    const ex2=p.ex2?`<div class="pa-ex" style="margin-top:.45rem"><span class="lbl">${p.ex2.lbl}</span>${p.ex2.txt}</div>`:'';
+    const warn=p.warn?`<div class="pa-warn">⚠ ${p.warn}</div>`:'';
+    return`<div class="pa" onclick="this.classList.toggle('open')">
+      <div class="pa-hd"><div class="pa-num">0${i+1}</div><div class="pa-tw"><div class="pa-name">${PNAMES[i]}</div><div class="pa-tag">${p.tag}</div></div><span class="pa-chev">▼</span></div>
+      <div class="pa-body">${p.body}${ex1}${ex2}${warn}</div>
+    </div>`;
+  }).join('');
+
+  // Artifact tabs
+  const promptPanel=`
+    <div class="artifact-panel on" id="ap-prompt">
+      <div class="prompt-usage">
+        <span class="prompt-usage-label">Use as</span>
+        <button class="usage-btn on" onclick="switchUsage(this,'pu-chat')">Chat window</button>
+        <button class="usage-btn" onclick="switchUsage(this,'pu-custom')">Custom chatbot</button>
+      </div>
+      <div class="prompt-note on" id="pu-chat">
+        Paste this prompt into any AI chat window, fill in the <span style="font-family:var(--m);color:var(--teal);font-size:.9em">[PLACEHOLDERS]</span>, and send. Works with Claude.ai, ChatGPT, or Gemini.
+        <a onclick="show('tutorial');showTut('prompt-chat')" style="cursor:pointer;margin-left:.4rem">→ Setup guide</a>
+      </div>
+      <div class="prompt-note" id="pu-custom">
+        <strong>Custom chatbot:</strong> Save this prompt as the system prompt in a Claude.ai Project (or any platform with a system prompt field). Fill in the fixed placeholders once — leave variable ones for each session.
+        <a onclick="show('tutorial');showTut('prompt-custom')" style="cursor:pointer;margin-left:.4rem">→ Setup guide</a>
+      </div>
+      <pre class="prompt-body">${c.prompt}</pre>
+      <div class="prompt-footer"><span>starter prompt · adapt before use</span><button class="cpb" onclick="cp(this)">Copy</button></div>
+    </div>`;
+
+  const skillTools=c.hasSkill?`
+    <div class="skill-intro">
+      <strong>${c.skillDesc}</strong><br>
+      Download the skill file and run it with one of the tools below. The same file works with all three.
+    </div>
+    <div class="skill-tools">
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">⌨</span><span class="skill-tool-name">Claude Code</span><span class="skill-tool-tag">Terminal · Agentic</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Install Claude Code, place the skill file in a <code>skills/</code> folder in your project, then:<div class="cmd">claude\n&gt; Read skills/${c.skillFile} and follow it.</div>Claude Code will execute the full pipeline, pausing at review gates for your confirmation. <a onclick="show('tutorial');showTut('skill-claudecode')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">🌐</span><span class="skill-tool-name">Claude.ai Projects</span><span class="skill-tool-tag">Browser · No install</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Paste the skill file contents into a Claude.ai Project's instructions. Upload your reference files to the project. Start a new conversation and paste your input — Claude will follow the skill procedure. Note: cannot execute code or write files to your computer. <a onclick="show('tutorial');showTut('skill-desktop')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">◆</span><span class="skill-tool-name">Gemini CLI</span><span class="skill-tool-tag">Terminal · Open source</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Install Gemini CLI, place the skill file in <code>skills/</code>, then:<div class="cmd">gemini\n&gt; Read skills/${c.skillFile} and follow it.</div>The same skill file works with both Claude Code and Gemini CLI. <a onclick="show('tutorial');showTut('skill-gemini')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+    </div>
+    <div class="skill-footer"><span>skill file · Claude Code · Claude.ai · Gemini CLI</span><button class="dlb" onclick="alert('Download: ${c.skillFile}')">Download skill file</button></div>`:`
+    <div style="padding:1.2rem 1rem;background:var(--bg2);font-size:.82rem;color:var(--muted);line-height:1.6">This case study is prompt-guided — no skill file is provided. Use the prompt in a chat window or as a custom chatbot base prompt.</div>`;
+
+  const artifactHTML=`
+    <div class="artifact-section">
+      <div class="artifact-tabs">
+        <button class="atab p-tab on" onclick="switchTab(this,'ap-prompt')">Prompt</button>
+        ${c.hasSkill?'<button class="atab s-tab" onclick="switchTab(this,\'ap-skill\')">Skill file</button>':''}
+      </div>
+      ${promptPanel}
+      ${c.hasSkill?`<div class="artifact-panel" id="ap-skill"><div class="skill-tools">${skillTools.replace('<div class="skill-intro">','<div class="skill-intro">').replace('<div class="skill-tools">','').replace('</div>\n    <div class="skill-footer">','</div><div class="skill-footer">').replace('<div class="skill-tools">','')}</div></div>`:''}
+    </div>`;
+
+  // cleaner skill panel render
+  const skillPanel=c.hasSkill?`<div class="artifact-panel" id="ap-skill">
+    <div class="skill-intro"><strong>${c.skillDesc}</strong><br>Download the skill file and run it with one of the tools below. The same file works with all three.</div>
+    <div class="skill-tools">
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">⌨</span><span class="skill-tool-name">Claude Code</span><span class="skill-tool-tag">Terminal · Agentic</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Install Claude Code, place the skill file in a <code>skills/</code> folder, then run:<div class="cmd">claude\n> Read skills/${c.skillFile} and follow it.</div>Claude Code executes the full pipeline, pausing at review gates. <a onclick="show('tutorial');showTut('skill-claudecode')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">🌐</span><span class="skill-tool-name">Claude.ai Projects</span><span class="skill-tool-tag">Browser · No install</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Paste the skill file into a Project's instructions. Upload reference files. Start a new chat and paste your input. <strong>Note:</strong> cannot execute code or write files to disk. <a onclick="show('tutorial');showTut('skill-desktop')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">◆</span><span class="skill-tool-name">Gemini CLI</span><span class="skill-tool-tag">Terminal · Open source</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Install Gemini CLI, place the skill file in <code>skills/</code>, then run:<div class="cmd">gemini\n> Read skills/${c.skillFile} and follow it.</div>The same skill file works with Claude Code and Gemini CLI. <a onclick="show('tutorial');showTut('skill-gemini')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+    </div>
+    <div class="skill-footer"><span>compatible with Claude Code · Claude.ai · Gemini CLI</span><button class="dlb" onclick="alert('Would download: ${c.skillFile}')">Download skill file</button></div>
+  </div>`:'';
+
+  document.getElementById('dw').innerHTML=`
+    <button class="bk" onclick="show('index')">← Back to library</button>
+    <div class="dm">
+      ${c.pipelineTags.map(p=>`<span class="tag tp-${p}">${p}</span>`).join('')}
+      ${c.topicTags.map(t=>`<span class="tag tt">${t}</span>`).join('')}
+    </div>
+    <div class="dt">${c.icon} ${c.title}</div>
+    <div class="dc">${c.context}</div>
+    <div class="div"></div>
+    <div class="sl">What goes wrong vs what the principles change<i class="sl-tip">i<span class="tip-box"><strong>Why this comparison?</strong>Every case study shows the failure modes of naive AI use alongside how the 5 principles address each one. Reading both sides helps you understand not just what to do, but why it matters.</span></i></div>
+    ${riskB}
+    <div class="div"></div>
+    <div class="sl">Pipeline position<i class="sl-tip">i<span class="tip-box"><strong>School of Data pipeline</strong>The 7-step methodology: Define → Find → Get → Verify → Clean → Analyse → Present. The highlighted steps show where this case study sits in that journey. <a href="https://civicliteraci.es/data-pipeline/" target="_blank" style="color:var(--teal)">Learn more →</a></span></i></div>
+    <div class="pbar">${pbar}</div>
+    <div class="sl">The 5 principles applied to this case<i class="sl-tip">i<span class="tip-box"><strong>The 5 principles</strong>Objective · Output shape · Atomic steps · Reasoning trace · Human review. Each accordion below explains how to apply that principle to this specific task — with examples of what goes wrong if you skip it.</span></i></div>
+    ${princH}
+    <div class="div"></div>
+    <div class="sl">Use this case study<i class="sl-tip">i<span class="tip-box"><strong>Prompt vs Skill file</strong>The <strong>Prompt</strong> is a structured text template — paste it into any AI chat window or save it as a custom chatbot. The <strong>Skill file</strong> (pipeline cases) automates the full multi-step process with Claude Code, Claude.ai, or Gemini CLI.</span></i></div>
+    <div class="artifact-section">
+      <div class="artifact-tabs">
+        <button class="atab p-tab on" id="tab-prompt" onclick="switchTab(this,'ap-prompt-${c.id}')">Prompt</button>
+        ${c.hasSkill?`<button class="atab s-tab" id="tab-skill" onclick="switchTab(this,'ap-skill-${c.id}')">Skill file</button>`:''}
+      </div>
+      <div class="artifact-panel on" id="ap-prompt-${c.id}">
+        <div class="prompt-usage">
+          <span class="prompt-usage-label">Use as</span>
+          <button class="usage-btn on" onclick="switchUsage(this,'pu-chat-${c.id}')">Chat window</button>
+          <button class="usage-btn" onclick="switchUsage(this,'pu-custom-${c.id}')">Custom chatbot</button>
+        </div>
+        <div class="prompt-note on" id="pu-chat-${c.id}">Paste this prompt into any AI chat window, fill in the <span style="font-family:var(--m);color:var(--teal);font-size:.9em">[PLACEHOLDERS]</span>, and send. Works with Claude.ai, ChatGPT, or Gemini. <a onclick="show('tutorial');showTut('prompt-chat')" style="cursor:pointer">→ Setup guide</a></div>
+        <div class="prompt-note" id="pu-custom-${c.id}"><strong>Custom chatbot:</strong> Save this as the system prompt in a Claude.ai Project or any platform with a system prompt field. Fill in fixed placeholders once — leave variable ones for each session. <a onclick="show('tutorial');showTut('prompt-custom')" style="cursor:pointer">→ Setup guide</a></div>
+        <pre class="prompt-body">${c.prompt}</pre>
+        <div class="prompt-footer"><span>adapt placeholders before use</span><button class="cpb" onclick="cp(this)">Copy</button></div>
+      </div>
+      ${skillPanel}
+    </div>`;
+
+  show('detail');
+}
+
+function switchTab(btn,panelId){
+  const wrap=btn.closest('.artifact-section');
+  wrap.querySelectorAll('.atab').forEach(t=>t.classList.remove('on'));
+  wrap.querySelectorAll('.artifact-panel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(panelId).classList.add('on');
+}
+function switchUsage(btn,noteId){
+  const wrap=btn.closest('.artifact-panel');
+  wrap.querySelectorAll('.usage-btn').forEach(b=>b.classList.remove('on'));
+  wrap.querySelectorAll('.prompt-note').forEach(n=>n.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(noteId).classList.add('on');
+}
+function cp(btn){
+  const pre=btn.closest('.artifact-panel').querySelector('.prompt-body');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1800)});
+}
+
+// ── GLOSSARY ──
+function renderGlos(filter='',letter=''){
+  const q=(filter||'').toLowerCase();
+  const entries=document.getElementById('glos-entries');
+  const groups={};
+  GLOSSARY.filter(g=>{
+    if(q&&!g.term.toLowerCase().includes(q)&&!g.def.toLowerCase().includes(q))return false;
+    if(letter&&g.term[0].toUpperCase()!==letter)return false;
+    return true;
+  }).forEach(g=>{
+    const L=g.term[0].toUpperCase();
+    if(!groups[L])groups[L]=[];
+    groups[L].push(g);
+  });
+  entries.innerHTML=Object.keys(groups).sort().map(L=>`
+    <div class="glos-group">
+      <div class="glos-letter">${L}</div>
+      ${groups[L].map(g=>`<div class="glos-entry">
+        <div class="glos-term">${g.term}</div>
+        <div class="glos-def">${g.def}</div>
+        ${g.link?`<div style="margin-top:.5rem"><a href="${g.link.url}" target="_blank" style="font-family:var(--m);font-size:.62rem;color:var(--teal);text-decoration:none;border-bottom:1px solid var(--tbd)">${g.link.label}</a></div>`:''}
+        ${g.related?.length?`<div class="glos-related">See also:${g.related.map(r=>`<span onclick="filterGlosTo('${r}')">${r}</span>`).join('')}</div>`:''}
+      </div>`).join('')}
+    </div>`).join('');
+  // alpha bar
+  const letters=[...new Set(GLOSSARY.map(g=>g.term[0].toUpperCase()))].sort();
+  document.getElementById('glos-alpha').innerHTML=letters.map(L=>
+    `<button class="alpha-btn ${L===letter?'on':''}" onclick="alphaFilter('${L}')">${L}</button>`
+  ).join('')+`<button class="alpha-btn ${!letter?'on':''}" onclick="alphaFilter('')">All</button>`;
+}
+let _glosLetter='';
+function filterGlos(){renderGlos(document.getElementById('gsi').value,_glosLetter)}
+function alphaFilter(L){_glosLetter=L;renderGlos(document.getElementById('gsi').value,L)}
+function filterGlosTo(term){
+  document.getElementById('gsi').value=term;
+  _glosLetter='';
+  renderGlos(term,'');
+}
+
+// ── TUTORIAL ──
+function showTut(id){
+  document.querySelectorAll('.tut-section').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tut-nav-item').forEach(n=>n.classList.remove('on'));
+  document.getElementById('tut-'+id)?.classList.add('on');
+  document.querySelectorAll('.tut-nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')?.includes(id))n.classList.add('on');
+  });
+}
+
+// ── INIT ──
+rc();
+renderGlos();
+initML();
+</script>
+</body>
+</html>

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI for Civic Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fafaf8;--bg2:#ffffff;--bg3:#f2f1ee;
+  --border:#e0ded8;--border2:#c8c5bc;
+  --text:#1a1916;--muted:#5a5750;--dim:#a09d96;
+  --amber:#c47d00;--abg:rgba(196,125,0,.07);--abd:#c47d00;
+  --teal:#007a6e;--tbg:rgba(0,122,110,.07);--tbd:#007a6e;
+  --coral:#c0392b;--rbg:rgba(192,57,43,.07);--rbd:#c0392b;
+  --sage:#2e7d4f;--sbg:rgba(46,125,79,.07);--sbd:#2e7d4f;
+  --violet:#6b4faa;--vbg:rgba(107,79,170,.07);--vbd:#6b4faa;
+  --gold:#b07c00;--gbg:rgba(176,124,0,.07);--gbd:#b07c00;
+  --h:'Syne',sans-serif;--b:'Source Serif 4',serif;--m:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--b);font-size:15px;line-height:1.65;min-height:100vh}
+.view{display:none}.view.active{display:block}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:200;background:rgba(250,250,248,.97);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:50px;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.logo{font-family:var(--h);font-weight:800;font-size:.88rem;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.logo-dot{width:6px;height:6px;background:var(--amber);border-radius:50%}
+.nav-links{display:flex;align-items:center;gap:.2rem}
+.nl{font-family:var(--m);font-size:.62rem;color:var(--muted);padding:4px 10px;border-radius:4px;cursor:pointer;transition:all .13s;border:1px solid transparent;white-space:nowrap}
+.nl:hover{color:var(--text);border-color:var(--border)}
+.nl.on{color:var(--amber);border-color:var(--abd);background:var(--abg)}
+
+/* ── TOOLTIP ── */
+.tip{position:relative;border-bottom:1px dashed var(--tbd);color:var(--teal);cursor:help;display:inline}
+.tip:hover .tip-box,.tip:focus .tip-box{display:block}
+.tip-box{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);z-index:300;width:260px;background:#fff;border:1px solid var(--border2);border-radius:6px;padding:.65rem .8rem;font-family:var(--b);font-size:.78rem;font-style:normal;color:var(--text);line-height:1.55;font-weight:300;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.12);text-transform:none;letter-spacing:0}
+.tip-box strong{display:block;font-family:var(--h);font-size:.82rem;font-weight:700;color:var(--teal);margin-bottom:3px;text-transform:none;letter-spacing:0}
+.tip-box::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--border2)}
+
+/* ── SHARED LAYOUT ── */
+.inner{max-width:820px;margin:0 auto;padding:2.5rem 1.5rem 5rem}
+.page-eye{font-family:var(--m);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:.8rem;display:flex;align-items:center;gap:8px}
+.page-eye::before{content:'';display:inline-block;width:16px;height:1px;background:var(--amber)}
+.page-h1{font-family:var(--h);font-size:clamp(1.7rem,4vw,2.5rem);font-weight:800;line-height:1.05;letter-spacing:-.025em;margin-bottom:.9rem}
+.page-lead{color:var(--muted);font-size:.93rem;line-height:1.72;font-weight:300;max-width:60ch;margin-bottom:2rem}
+.div{height:1px;background:var(--border);margin:1.8rem 0}
+.sl{font-family:var(--m);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+.sl::after{content:'';flex:1;height:1px;background:var(--border)}
+.sl-tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);font-family:var(--b);font-size:.6rem;color:var(--dim);cursor:help;position:relative;margin-left:.3rem;flex-shrink:0;line-height:1;font-style:normal;text-transform:none;letter-spacing:0}
+.sl-tip:hover .tip-box{display:block}
+.sl-tip .tip-box{bottom:calc(100% + 6px);left:0;transform:none;font-family:var(--b);text-transform:none;letter-spacing:0}
+
+.prose{font-size:.92rem;color:var(--muted);line-height:1.78;font-weight:300;max-width:66ch}
+.prose strong{color:var(--text);font-weight:600}
+.prose p+p{margin-top:.9rem}
+
+/* ── HERO ── */
+.hero{padding:3rem 1.5rem 2rem;max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:start}
+@media(max-width:720px){.hero{grid-template-columns:1fr;gap:2rem}}
+.hero-eye{font-family:var(--m);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:.9rem;display:flex;align-items:center;gap:9px}
+.hero-eye::before{content:'';display:inline-block;width:18px;height:1px;background:var(--amber)}
+.hero h1{font-family:var(--h);font-size:clamp(2rem,4.5vw,3.4rem);font-weight:800;line-height:1.0;letter-spacing:-.03em;margin-bottom:1rem}
+.hero h1 em{font-style:normal;color:var(--amber)}
+.hero-lead{color:var(--muted);font-size:.92rem;line-height:1.72;font-weight:300;max-width:44ch;margin-bottom:1.4rem}
+.hero-call{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:6px;padding:.95rem 1.2rem;font-size:.84rem;color:var(--text);line-height:1.7}
+.hero-call strong{color:var(--amber);font-family:var(--h);font-weight:700}
+.pc{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.pc-title{font-family:var(--m);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.85rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.pc-title span{color:var(--amber);font-size:.58rem}
+.pr{display:flex;align-items:stretch;border-bottom:1px solid var(--border)}
+.pr:last-child{border-bottom:none}
+.pr-num{font-family:var(--m);font-size:.65rem;font-weight:500;color:var(--amber);padding:.8rem .82rem;min-width:36px;display:flex;align-items:flex-start;justify-content:center;background:rgba(240,168,50,.04);border-right:1px solid var(--border)}
+.pr-bd{padding:.72rem .95rem;flex:1}
+.pr-name{font-family:var(--h);font-size:.84rem;font-weight:700;margin-bottom:1px}
+.pr-sub{font-size:.75rem;color:var(--muted);line-height:1.45;font-weight:300}
+
+/* ── MAD-LIB FILTER ── */
+.madlib{margin:1.4rem 0 1.2rem}
+.madlib-sentence{font-family:var(--b);font-size:1.25rem;color:var(--text);line-height:1.9;font-weight:300}
+.ml-blank{display:inline-block;position:relative}
+.ml-trigger{display:inline-flex;align-items:center;gap:4px;border-bottom:2px solid var(--amber);color:var(--amber);cursor:pointer;font-weight:600;padding:0 3px;white-space:nowrap;transition:background .13s;border-radius:2px 2px 0 0}
+.ml-trigger:hover{background:var(--abg)}
+.ml-trigger.has-value{color:var(--teal);border-bottom-color:var(--teal)}
+.ml-trigger.has-value:hover{background:var(--tbg)}
+.ml-arrow{font-size:.6rem;opacity:.5;margin-left:1px}
+.ml-dropdown{display:none;position:absolute;top:calc(100% + 3px);left:0;z-index:150;background:#fff;border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.12);min-width:190px;overflow:hidden}
+.ml-blank.open .ml-dropdown{display:block}
+.ml-option{display:block;padding:.48rem .85rem;font-family:var(--b);font-size:.87rem;color:var(--text);cursor:pointer;transition:background .1s;white-space:nowrap;font-weight:300}
+.ml-option:hover{background:var(--bg3)}
+.ml-option.sel{color:var(--teal);font-weight:600;background:var(--tbg)}
+.ml-option.rst{color:var(--dim);border-top:1px solid var(--border);font-style:italic}
+
+/* ── FILTER + GRID ── */
+.fs{padding:0 1.5rem 1.5rem;max-width:1180px;margin:0 auto}
+.sw{position:relative;margin-bottom:1rem}
+.sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:.95rem;pointer-events:none}
+#si{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:var(--b);font-size:.88rem;padding:.62rem .9rem .62rem 2.5rem;border-radius:6px;outline:none;transition:border-color .18s}
+#si::placeholder{color:var(--dim)}
+#si:focus{border-color:var(--amber)}
+.fr{display:flex;gap:.38rem;flex-wrap:wrap;align-items:center}
+.fl{font-family:var(--m);font-size:.59rem;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-right:.15rem}
+.fsep{width:1px;height:15px;background:var(--border);margin:0 .3rem}
+.fb{font-family:var(--m);font-size:.6rem;padding:3px 9px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .13s}
+.fb:hover{border-color:var(--muted);color:var(--text)}
+.fb.active{font-weight:500}
+.fb[data-f="pipe:define"].active{background:var(--tbg);border-color:var(--tbd);color:var(--teal)}
+.fb[data-f="pipe:find"].active{background:var(--vbg);border-color:var(--vbd);color:var(--violet)}
+.fb[data-f="pipe:verify"].active{background:var(--rbg);border-color:var(--rbd);color:var(--coral)}
+.fb[data-f="pipe:clean"].active{background:var(--gbg);border-color:var(--gbd);color:var(--gold)}
+.fb[data-f="pipe:analyse"].active{background:var(--tbg);border-color:var(--tbd);color:var(--teal)}
+.fb[data-f="pipe:present"].active{background:var(--abg);border-color:var(--abd);color:var(--amber)}
+.fb[data-f="mode:prompt-guided"].active{background:var(--tbg);border-color:var(--tbd);color:var(--teal)}
+.fb[data-f="mode:pipeline"].active{background:var(--abg);border-color:var(--abd);color:var(--amber)}
+.gs{padding:0 1.5rem 4rem;max-width:1180px;margin:0 auto}
+.gc{font-family:var(--m);font-size:.6rem;color:var(--dim);margin-bottom:1rem}
+.gc strong{color:var(--muted)}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:.85rem}
+.cc{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:1.2rem;cursor:pointer;transition:border-color .15s,transform .15s,background .15s;position:relative;overflow:hidden;animation:fadeUp .35s ease both}
+.cc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ca,var(--amber));opacity:0;transition:opacity .15s}
+.cc:hover{border-color:var(--border2);transform:translateY(-2px);background:var(--bg3)}
+.cc:hover::after{opacity:1}
+.ctit{font-family:var(--h);font-size:1rem;font-weight:700;margin-bottom:.35rem;line-height:1.25}
+.cdesc{font-size:.8rem;color:var(--muted);line-height:1.6;font-weight:300;margin-bottom:.9rem}
+
+/* pipeline strip on card */
+.c-pipe{display:flex;gap:0;margin-bottom:.5rem;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.c-pipe-step{font-family:var(--m);font-size:.52rem;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;color:var(--dim);border-right:1px solid var(--border);background:transparent;white-space:nowrap;flex:1;text-align:center}
+.c-pipe-step:last-child{border-right:none}
+.c-pipe-step.on-define{background:rgba(0,122,110,.1);color:var(--teal);font-weight:600}
+.c-pipe-step.on-find{background:rgba(107,79,170,.1);color:var(--violet);font-weight:600}
+.c-pipe-step.on-get{background:rgba(46,125,79,.1);color:var(--sage);font-weight:600}
+.c-pipe-step.on-verify{background:rgba(192,57,43,.1);color:var(--coral);font-weight:600}
+.c-pipe-step.on-clean{background:rgba(176,124,0,.1);color:var(--gold);font-weight:600}
+.c-pipe-step.on-analyse{background:rgba(0,122,110,.1);color:var(--teal);font-weight:600}
+.c-pipe-step.on-present{background:rgba(196,125,0,.1);color:var(--amber);font-weight:600}
+
+/* topic tags */
+.ctags{display:flex;flex-wrap:wrap;gap:.28rem;margin-top:.45rem}
+.tag{font-family:var(--m);font-size:.56rem;padding:2px 7px;border-radius:3px}
+.tt{background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+.cf{display:flex;align-items:center;justify-content:space-between;margin-top:.9rem;padding-top:.8rem;border-top:1px solid var(--border)}
+.csk{font-family:var(--m);font-size:.56rem;color:var(--dim)}
+.csk.y{color:var(--sage)}
+.car{color:var(--dim);font-size:.72rem;transition:transform .13s,color .13s}
+.cc:hover .car{transform:translateX(4px);color:var(--amber)}
+.es{grid-column:1/-1;padding:3rem;text-align:center;color:var(--dim);font-family:var(--m);font-size:.75rem}
+
+/* ── DETAIL ── */
+.dw{max-width:780px;margin:0 auto;padding:2rem 1.5rem 5rem}
+.bk{display:inline-flex;align-items:center;gap:7px;font-family:var(--m);font-size:.6rem;color:var(--muted);cursor:pointer;margin-bottom:2rem;transition:color .13s;letter-spacing:.06em;text-transform:uppercase;background:none;border:none}
+.bk:hover{color:var(--amber)}
+.dm{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem}
+.dt{font-family:var(--h);font-size:clamp(1.5rem,4vw,2.4rem);font-weight:800;letter-spacing:-.025em;line-height:1.08;margin-bottom:1rem}
+.dc{font-size:.95rem;color:var(--muted);line-height:1.75;font-weight:300;padding:1rem 1.2rem;background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:6px}
+.pbar{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:5px;overflow:hidden;width:fit-content;margin-bottom:1.8rem;flex-wrap:wrap}
+.pstep{font-family:var(--m);font-size:.56rem;letter-spacing:.07em;text-transform:uppercase;padding:5px 11px;color:var(--dim);border-right:1px solid var(--border)}
+.pstep:last-child{border-right:none}
+.pstep.on{color:var(--teal);background:var(--tbg)}
+
+/* risk comparison */
+.rc-cols{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+@media(max-width:540px){.rc-cols{grid-template-columns:1fr}}
+.rc-col{display:flex;flex-direction:column}
+.rc-head{padding:.58rem .88rem;font-family:var(--m);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;font-weight:500;border-bottom:1px solid var(--border)}
+.rc-col.naive .rc-head{background:rgba(232,97,74,.07);color:var(--coral);border-right:1px solid var(--border)}
+.rc-col.good .rc-head{background:rgba(52,196,180,.07);color:var(--teal)}
+.rc-items{display:flex;flex-direction:column;flex:1}
+.rc-item{padding:.65rem .88rem;font-size:.79rem;line-height:1.58;font-weight:300;border-bottom:1px solid var(--border);display:flex;gap:.5rem;align-items:flex-start}
+.rc-item:last-child{border-bottom:none}
+.rc-col.naive .rc-item{color:var(--muted);background:var(--bg2);border-right:1px solid var(--border)}
+.rc-col.good .rc-item{color:var(--muted);background:var(--bg2)}
+.rc-col.naive .rc-item:nth-child(odd){background:var(--bg)}
+.rc-col.good .rc-item:nth-child(odd){background:var(--bg)}
+.rc-col.naive .rc-item::before{content:'✕';font-family:var(--m);font-size:.6rem;color:var(--coral);flex-shrink:0;margin-top:3px;opacity:.8}
+.rc-col.good .rc-item::before{content:'✓';font-family:var(--m);font-size:.6rem;color:var(--teal);flex-shrink:0;margin-top:3px;font-weight:700}
+.rc-item strong{color:var(--text);font-weight:600;display:block;margin-bottom:2px;font-family:var(--h);font-size:.8rem}
+
+/* principles accordion */
+.pa{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.5rem}
+.pa-hd{display:flex;align-items:center;gap:.85rem;padding:.78rem 1rem;cursor:pointer;background:var(--bg2);transition:background .13s;user-select:none}
+.pa-hd:hover{background:var(--bg3)}
+.pa-num{font-family:var(--m);font-size:.65rem;font-weight:500;color:var(--amber);background:var(--abg);border:1px solid var(--abd);width:23px;height:23px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pa-tw{flex:1}
+.pa-name{font-family:var(--h);font-size:.9rem;font-weight:700}
+.pa-tag{font-family:var(--m);font-size:.58rem;color:var(--dim);margin-top:1px;letter-spacing:.04em}
+.pa-chev{color:var(--dim);font-size:.62rem;transition:transform .18s}
+.pa.open .pa-chev{transform:rotate(180deg)}
+.pa-body{display:none;padding:.85rem 1rem .95rem 3.2rem;border-top:1px solid var(--border);background:var(--bg3);font-size:.84rem;color:var(--muted);font-weight:300;line-height:1.72}
+.pa.open .pa-body{display:block}
+.pa-body strong{color:var(--text);font-weight:600}
+.pa-ex{margin-top:.75rem;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--amber);border-radius:4px;padding:.6rem .85rem;font-family:var(--m);font-size:.73rem;color:var(--text);line-height:1.6;white-space:pre-wrap}
+.pa-ex .lbl{font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);display:block;margin-bottom:3px}
+.pa-warn{margin-top:.6rem;background:rgba(232,97,74,.06);border:1px solid var(--rbd);border-radius:4px;padding:.5rem .8rem;font-size:.78rem;color:var(--coral);line-height:1.5}
+
+/* ── ARTIFACTS (prompt + skill) ── */
+.artifact-section{margin-top:0}
+.artifact-tabs{display:flex;gap:0;border:1px solid var(--border);border-radius:7px 7px 0 0;overflow:hidden}
+.atab{flex:1;font-family:var(--m);font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;padding:.62rem 1rem;background:var(--bg2);color:var(--muted);cursor:pointer;transition:all .13s;border:none;border-right:1px solid var(--border);text-align:center;font-weight:500}
+.atab:last-child{border-right:none}
+.atab.on{background:var(--bg3);color:var(--text)}
+.atab.on.p-tab{border-bottom:2px solid var(--teal);color:var(--teal)}
+.atab.on.s-tab{border-bottom:2px solid var(--amber);color:var(--amber)}
+.artifact-panel{display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 7px 7px;overflow:hidden}
+.artifact-panel.on{display:block}
+
+/* prompt panel */
+.prompt-usage{display:flex;gap:.5rem;padding:.7rem 1rem;background:rgba(52,196,180,.04);border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap}
+.prompt-usage-label{font-family:var(--m);font-size:.58rem;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;margin-right:.3rem}
+.usage-btn{font-family:var(--m);font-size:.6rem;padding:3px 10px;border-radius:3px;border:1px solid var(--tbd);background:var(--tbg);color:var(--teal);cursor:pointer;transition:all .13s}
+.usage-btn:hover,.usage-btn.on{background:var(--teal);color:#000;font-weight:500}
+.prompt-note{padding:.65rem 1rem;background:var(--bg2);border-bottom:1px solid var(--border);font-size:.78rem;color:var(--muted);line-height:1.55;display:none}
+.prompt-note.on{display:block}
+.prompt-note strong{color:var(--text);font-weight:600}
+.prompt-note a{color:var(--teal);text-decoration:none;border-bottom:1px solid var(--tbd)}
+.prompt-note a:hover{border-color:var(--teal)}
+.prompt-body{padding:.85rem 1rem;font-family:var(--m);font-size:.74rem;line-height:1.72;color:var(--text);white-space:pre-wrap;overflow-x:auto;background:var(--bg3)}
+.pv{color:var(--teal)}.pcc{color:var(--dim)}
+.prompt-footer{display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem;background:var(--bg2);border-top:1px solid var(--border)}
+.prompt-footer span{font-family:var(--m);font-size:.58rem;color:var(--dim)}
+.cpb{font-family:var(--m);font-size:.58rem;background:none;border:1px solid var(--border);color:var(--muted);padding:2px 9px;border-radius:3px;cursor:pointer;transition:all .13s}
+.cpb:hover{border-color:var(--teal);color:var(--teal)}
+
+/* skill panel */
+.skill-intro{padding:.85rem 1rem;background:var(--bg2);border-bottom:1px solid var(--border);font-size:.82rem;color:var(--muted);line-height:1.6;font-weight:300}
+.skill-intro strong{color:var(--text);font-weight:600}
+.skill-tools{display:flex;flex-direction:column;gap:0}
+.skill-tool{border-bottom:1px solid var(--border)}
+.skill-tool:last-child{border-bottom:none}
+.skill-tool-head{display:flex;align-items:center;gap:.7rem;padding:.65rem 1rem;cursor:pointer;background:var(--bg2);transition:background .13s;user-select:none}
+.skill-tool-head:hover{background:var(--bg3)}
+.skill-tool-icon{font-size:1rem;flex-shrink:0}
+.skill-tool-name{font-family:var(--h);font-size:.84rem;font-weight:700;flex:1}
+.skill-tool-tag{font-family:var(--m);font-size:.58rem;color:var(--dim);letter-spacing:.04em}
+.skill-tool-chev{color:var(--dim);font-size:.6rem;transition:transform .18s}
+.skill-tool.open .skill-tool-chev{transform:rotate(180deg)}
+.skill-tool-body{display:none;padding:.7rem 1rem .85rem 2.8rem;border-top:1px solid var(--border);background:var(--bg3);font-size:.8rem;color:var(--muted);line-height:1.65;font-weight:300}
+.skill-tool.open .skill-tool-body{display:block}
+.skill-tool-body strong{color:var(--text);font-weight:600}
+.skill-tool-body a{color:var(--teal);text-decoration:none;border-bottom:1px solid var(--tbd)}
+.skill-tool-body a:hover{border-color:var(--teal)}
+.skill-tool-body .cmd{margin-top:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:.5rem .8rem;font-family:var(--m);font-size:.72rem;color:var(--sage);white-space:pre-wrap}
+.skill-footer{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;background:var(--bg2);border-top:1px solid var(--border)}
+.skill-footer span{font-family:var(--m);font-size:.58rem;color:var(--dim)}
+.dlb{font-family:var(--m);font-size:.64rem;background:var(--amber);color:#000;border:none;padding:5px 14px;border-radius:4px;cursor:pointer;font-weight:500;transition:opacity .13s}
+.dlb:hover{opacity:.85}
+
+/* ── GLOSSARY ── */
+.glos-search{position:relative;margin-bottom:1.5rem}
+.glos-search input{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:var(--b);font-size:.88rem;padding:.62rem .9rem .62rem 2.5rem;border-radius:6px;outline:none;transition:border-color .18s}
+.glos-search input::placeholder{color:var(--dim)}
+.glos-search input:focus{border-color:var(--amber)}
+.glos-search .sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:.95rem;pointer-events:none}
+.glos-alpha{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:1.5rem}
+.alpha-btn{font-family:var(--m);font-size:.6rem;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .13s}
+.alpha-btn:hover{border-color:var(--muted);color:var(--text)}
+.alpha-btn.on{background:var(--amber);border-color:var(--amber);color:#000;font-weight:700}
+.glos-group{margin-bottom:1.5rem}
+.glos-letter{font-family:var(--h);font-size:1.1rem;font-weight:800;color:var(--amber);margin-bottom:.7rem;letter-spacing:-.01em}
+.glos-entry{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:.85rem 1rem;margin-bottom:.5rem}
+.glos-term{font-family:var(--h);font-size:.92rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+.glos-def{font-size:.82rem;color:var(--muted);line-height:1.65;font-weight:300}
+.glos-def strong{color:var(--text);font-weight:600}
+.glos-related{margin-top:.4rem;font-family:var(--m);font-size:.58rem;color:var(--dim)}
+.glos-related span{color:var(--teal);cursor:pointer;margin-left:.3rem}
+.glos-related span:hover{color:var(--text)}
+.glos-tag{display:inline;font-family:var(--m);font-size:.56rem;padding:1px 6px;border-radius:3px;margin-right:.3rem;vertical-align:middle}
+
+/* ── TUTORIAL ── */
+.tut-nav{display:flex;flex-direction:column;gap:.3rem;padding:1rem 0;border-right:1px solid var(--border);min-width:180px}
+.tut-layout{display:grid;grid-template-columns:180px 1fr;gap:2rem;align-items:start}
+@media(max-width:640px){.tut-layout{grid-template-columns:1fr}.tut-nav{flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--border);padding-bottom:1rem}}
+.tut-nav-item{font-family:var(--m);font-size:.62rem;padding:5px 10px;border-radius:4px;cursor:pointer;color:var(--muted);transition:all .13s;border:1px solid transparent;white-space:nowrap}
+.tut-nav-item:hover{color:var(--text)}
+.tut-nav-item.on{color:var(--amber);border-color:var(--abd);background:var(--abg)}
+.tut-section{display:none}
+.tut-section.on{display:block}
+.tut-h2{font-family:var(--h);font-size:1.2rem;font-weight:800;margin-bottom:.5rem}
+.tut-step{display:flex;gap:1rem;margin-bottom:1.3rem;align-items:flex-start}
+.tut-step-num{font-family:var(--m);font-size:.65rem;font-weight:500;color:var(--amber);background:var(--abg);border:1px solid var(--abd);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.tut-step-body{flex:1}
+.tut-step-title{font-family:var(--h);font-size:.9rem;font-weight:700;margin-bottom:.25rem}
+.tut-step-desc{font-size:.82rem;color:var(--muted);line-height:1.65;font-weight:300}
+.tut-step-desc strong{color:var(--text);font-weight:600}
+.tut-step-desc a{color:var(--teal);text-decoration:none;border-bottom:1px solid var(--tbd)}
+.tut-step-desc a:hover{border-color:var(--teal)}
+.tut-code{margin-top:.6rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.6rem .85rem;font-family:var(--m);font-size:.72rem;color:var(--sage);white-space:pre-wrap;line-height:1.6}
+.tut-note{background:var(--abg);border:1px solid var(--abd);border-radius:5px;padding:.65rem .9rem;font-size:.8rem;color:var(--muted);line-height:1.55;margin-top:.8rem}
+.tut-note strong{color:var(--amber);font-weight:600}
+
+footer{border-top:1px solid var(--border);padding:1.4rem;text-align:center;font-family:var(--m);font-size:.58rem;color:var(--dim)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.cc:nth-child(1){animation-delay:.04s}.cc:nth-child(2){animation-delay:.08s}
+.cc:nth-child(3){animation-delay:.12s}.cc:nth-child(4){animation-delay:.16s}
+.cc:nth-child(5){animation-delay:.20s}.cc:nth-child(6){animation-delay:.24s}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" onclick="show('index')"><span class="logo-dot"></span>AI for Civic Data</a>
+  <div class="nav-links">
+    <span class="nl on" id="nl-index" onclick="show('index')">Cases</span>
+    <span class="nl" id="nl-tutorial" onclick="show('tutorial')">Get started</span>
+    <span class="nl" id="nl-glossary" onclick="show('glossary')">Glossary</span>
+  </div>
+</nav>
+
+<!-- ══ INDEX ══ -->
+<div id="view-index" class="view active">
+<div class="hero" style="grid-template-columns:1fr;max-width:760px;gap:0">
+  <div>
+    <div class="hero-eye">Case Study Library</div>
+    <h1>The benefits of AI,<br>without the<br><em>blind spots.</em></h1>
+    <p class="hero-lead">Guides for civil society practitioners who want to work smarter with AI — without losing control of their analysis.</p>
+
+    <div class="madlib">
+      <div class="madlib-sentence">
+        I am at the
+        <span class="ml-blank" id="ml-stage">
+          <span class="ml-trigger" onclick="toggleML('ml-stage')">any<span class="ml-arrow">▾</span></span>
+          <div class="ml-dropdown" id="ml-stage-dd"></div>
+        </span>
+        stage of my data work, dealing with
+        <span class="ml-blank" id="ml-material">
+          <span class="ml-trigger" onclick="toggleML('ml-material')">any material<span class="ml-arrow">▾</span></span>
+          <div class="ml-dropdown" id="ml-material-dd"></div>
+        </span>.
+      </div>
+    </div>
+
+    <div class="hero-call"><strong>New here?</strong> Start with the <span style="color:var(--teal);cursor:pointer;border-bottom:1px solid var(--tbd)" onclick="show('tutorial')">Get started guide</span> to understand how prompts and skill files work, and how to set up each tool. Unfamiliar terms are <span class="tip">highlighted<span class="tip-box"><strong>Highlighted terms</strong>Hover any underlined teal term to see a definition from the glossary.</span></span> throughout.</div>
+  </div>
+</div>
+
+<div class="fs">
+  <div class="sw"><span class="sico">⌕</span><input type="text" id="si" placeholder="Or search by keyword…" oninput="rc()"></div>
+</div>
+<div class="gs"><div class="gc" id="gc"></div><div class="cg" id="cg"></div></div>
+</div>
+
+<!-- ══ DETAIL ══ -->
+<div id="view-detail" class="view"><div class="dw" id="dw"></div></div>
+
+<!-- ══ GLOSSARY ══ -->
+<div id="view-glossary" class="view">
+<div class="inner">
+  <div class="page-eye">Reference</div>
+  <h1 class="page-h1">Glossary</h1>
+  <p class="page-lead">Key terms used across the case studies. Hover any teal underlined word on any page to see its definition inline.</p>
+  <div class="glos-search"><span class="sico">⌕</span><input type="text" id="gsi" placeholder="Search terms…" oninput="filterGlos()"></div>
+  <div class="glos-alpha" id="glos-alpha"></div>
+  <div id="glos-entries"></div>
+</div>
+</div>
+
+<!-- ══ TUTORIAL ══ -->
+<div id="view-tutorial" class="view">
+<div class="inner">
+  <div class="page-eye">Guide</div>
+  <h1 class="page-h1">Get started</h1>
+  <p class="page-lead">Each case study is built around five principles for responsible AI use. This guide explains the principles, what the case studies provide, and how to use each tool.</p>
+  <div class="tut-layout">
+    <div class="tut-nav" id="tut-nav">
+      <div class="tut-nav-item on" onclick="showTut('principles')">The 5 principles</div>
+      <div class="tut-nav-item" onclick="showTut('overview')">Prompts &amp; skills</div>
+      <div class="tut-nav-item" onclick="showTut('prompt-chat')">Prompt in chat</div>
+      <div class="tut-nav-item" onclick="showTut('prompt-custom')">Custom chatbot</div>
+      <div class="tut-nav-item" onclick="showTut('skill-claudecode')">Skill · Claude Code</div>
+      <div class="tut-nav-item" onclick="showTut('skill-desktop')">Skill · Claude.ai</div>
+      <div class="tut-nav-item" onclick="showTut('skill-gemini')">Skill · Gemini CLI</div>
+    </div>
+    <div>
+
+      <div class="tut-section on" id="tut-principles">
+        <div class="tut-h2">The 5 principles</div>
+        <p class="prose" style="margin-bottom:1.5rem">Every case study on this site applies the same five principles. They are not a checklist to follow after the fact — they are decisions you make <em>before</em> you open a chat window or run a pipeline. Skipping any one of them is where things go wrong.</p>
+        <div class="div"></div>
+        <div class="pc" style="margin-bottom:0">
+          <div class="pc-title"><span>Applied to every case study</span></div>
+          <div class="pr"><div class="pr-num">01</div><div class="pr-bd"><div class="pr-name">Objective</div><div class="pr-sub">Define what success looks like in concrete, checkable terms — before touching AI. Not "summarise this document" but "extract all commitments naming a specific actor, obligation, and timeframe — with the paragraph reference for each."</div></div></div>
+          <div class="pr"><div class="pr-num">02</div><div class="pr-bd"><div class="pr-name">Output shape</div><div class="pr-sub">Specify the structure and fields of the result before you ask for it. A table with fixed columns, a JSON schema, a numbered list with named fields. Without a defined shape, AI produces narrative that is hard to verify and impossible to compare across documents.</div></div></div>
+          <div class="pr"><div class="pr-num">03</div><div class="pr-bd"><div class="pr-name">Atomic steps</div><div class="pr-sub">Break the task into explicit, ordered sub-tasks and ask AI to complete them one at a time. Do not ask AI to "do everything at once" — each step should have a defined input, a defined output, and a verification point before the next step begins.</div></div></div>
+          <div class="pr"><div class="pr-num">04</div><div class="pr-bd"><div class="pr-name">Reasoning trace</div><div class="pr-sub">Require AI to show its assumptions and interpretive choices at each step — not just its output. Without a trace, you see only the conclusion. A confidence field, a note field, or inline code comments all count. If AI can't show its reasoning, you can't evaluate it.</div></div></div>
+          <div class="pr"><div class="pr-num">05</div><div class="pr-bd"><div class="pr-name">Human review</div><div class="pr-sub">Design how a human will verify the result before you run anything. Define which outputs require mandatory review, which require spot-checks, and which can be validated automatically. The review process is part of the work, not an afterthought.</div></div></div>
+        </div>
+      </div>
+
+      <div class="tut-section" id="tut-overview">
+        <div class="tut-h2">Prompts and skill files</div>
+        <p class="prose" style="margin-bottom:1.5rem">Every case study gives you something concrete to use. The <strong>prompt</strong> is a structured text template that applies the 5 principles to that specific task. The <strong>skill file</strong> (pipeline cases only) is a reusable instruction set for agentic AI tools — it automates the multi-step process so you don't have to run each step manually.</p>
+        <div class="div"></div>
+        <div class="sl">Choosing the right approach</div>
+        <div style="display:flex;flex-direction:column;gap:.7rem">
+          <div style="background:var(--bg2);border:1px solid var(--tbd);border-left:3px solid var(--teal);border-radius:6px;padding:.85rem 1rem">
+            <div style="font-family:var(--h);font-size:.88rem;font-weight:700;color:var(--teal);margin-bottom:.3rem">Use the prompt if…</div>
+            <div style="font-size:.82rem;color:var(--muted);line-height:1.6;font-weight:300">You want to run a one-off task, try the approach before committing to a setup, or work with a dataset small enough to handle in a single session. The prompt works in any AI chat interface with no installation required.</div>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--abd);border-left:3px solid var(--amber);border-radius:6px;padding:.85rem 1rem">
+            <div style="font-family:var(--h);font-size:.88rem;font-weight:700;color:var(--amber);margin-bottom:.3rem">Use the skill file if…</div>
+            <div style="font-size:.82rem;color:var(--muted);line-height:1.6;font-weight:300">You need to process a corpus of files, repeat the task regularly, or want an automated pipeline that handles batching, validation, and audit logging. Skill files require a tool that can run agentic AI workflows — Claude Code, Claude.ai Projects, or Gemini CLI.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tut-section" id="tut-prompt-chat">
+        <div class="tut-h2">Using a prompt in a chat window</div>
+        <p class="prose" style="margin-bottom:1.5rem">The simplest way to use any case study. Works with Claude.ai, ChatGPT, Gemini, or any AI assistant.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Open a new conversation</div><div class="tut-step-desc">Go to <a href="https://claude.ai" target="_blank">claude.ai</a> (or your preferred AI assistant) and start a new chat. Each case study works best in a fresh conversation so the AI has no prior context to carry over.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Copy the prompt from the case study</div><div class="tut-step-desc">On any case study page, click the <strong>Prompt</strong> tab, then the Copy button. The prompt is a structured template with <span class="pv" style="font-family:var(--m)">[PLACEHOLDER]</span> slots you will fill in.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Fill in the placeholders</div><div class="tut-step-desc">Before sending, replace every <span style="font-family:var(--m);color:var(--teal);font-size:.85em">[PLACEHOLDER]</span> with your actual content — your document text, your specification, your questions. <strong>Do not skip placeholders or leave them blank.</strong> Each one corresponds to a decision the 5 principles require you to make.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Send and review the output</div><div class="tut-step-desc">The prompt is designed to produce structured output you can verify. Check the Human review accordion on the case study page for what to look for. For long documents, run the prompt section by section and compile the results yourself.</div></div></div>
+        <div class="tut-note"><strong>Tip:</strong> Keep the case study page open alongside your chat. The principles accordion explains why each part of the prompt is structured the way it is — useful when the output surprises you.</div>
+      </div>
+
+      <div class="tut-section" id="tut-prompt-custom">
+        <div class="tut-h2">Using a prompt as a custom chatbot</div>
+        <p class="prose" style="margin-bottom:1.5rem">A custom chatbot lets you save the prompt as a persistent system configuration, so you don't have to paste it each time. Good for tasks you run regularly or want to share with a team.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Open Claude.ai Projects</div><div class="tut-step-desc">In <a href="https://claude.ai" target="_blank">claude.ai</a>, click <strong>Projects</strong> in the sidebar, then <strong>New project</strong>. Projects allow you to set a persistent system prompt that applies to every conversation in that project.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Paste the prompt into Project Instructions</div><div class="tut-step-desc">In your new project, click <strong>Edit project instructions</strong>. Paste the full prompt from the case study. Fill in any placeholders that are fixed for your use (e.g. your extraction schema, your codebook). Leave placeholders that will vary per conversation.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Upload reference files</div><div class="tut-step-desc">If your case study uses a schema, codebook, or alias table — upload those files to the project. Claude will reference them in every conversation without you needing to paste them each time.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Start a new conversation per document or task</div><div class="tut-step-desc">Each new conversation in the project starts fresh with your system prompt active. Paste your document section, your dataset profile, or your search specification directly into the chat — the prompt structure handles the rest.</div></div></div>
+        <div class="tut-note"><strong>Also works with:</strong> The Anthropic API (set the prompt as the <code style="font-family:var(--m);font-size:.85em">system</code> parameter), or any platform that supports a system prompt field — including Poe, Dify, or Flowise.</div>
+      </div>
+
+      <div class="tut-section" id="tut-skill-claudecode">
+        <div class="tut-h2">Running a skill with Claude Code</div>
+        <p class="prose" style="margin-bottom:1.5rem"><span class="tip">Claude Code<span class="tip-box"><strong>Claude Code</strong>An agentic coding tool from Anthropic that runs in your terminal. It can read and write files, execute code, and run multi-step workflows — making it suitable for pipeline skill files that process batches of documents.</span></span> is an agentic tool that runs in your terminal. It can process files, run scripts, and execute multi-step pipelines — ideal for skill files that handle a corpus of documents.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Install Claude Code</div><div class="tut-step-desc">Claude Code requires Node.js. Install it via npm:
+          <div class="tut-code">npm install -g @anthropic-ai/claude-code</div>
+          Then authenticate: run <code style="font-family:var(--m);font-size:.85em">claude</code> and follow the login prompt. Full docs at <a href="https://docs.anthropic.com/claude-code" target="_blank">docs.anthropic.com/claude-code</a>.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Download the skill file</div><div class="tut-step-desc">On the case study page, click the <strong>Skill</strong> tab, then <strong>Download skill file</strong>. Save the <code style="font-family:var(--m);font-size:.85em">.md</code> file into a <code style="font-family:var(--m);font-size:.85em">skills/</code> folder in your project directory.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Set up your working directory</div><div class="tut-step-desc">Create a folder for the task and add your input files. For example, for thematic analysis:
+          <div class="tut-code">my-analysis/
+  skills/thematic-analysis-skill.md
+  input/document-01.txt
+  input/document-02.txt
+  codebook.yaml</div></div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Run Claude Code with the skill</div><div class="tut-step-desc">From your project directory, start Claude Code and reference the skill file:
+          <div class="tut-code">cd my-analysis
+claude
+&gt; Read skills/thematic-analysis-skill.md and follow it.</div>
+          Claude Code will read the skill, ask any clarifying questions, then execute the pipeline — processing your input files, producing outputs, and logging its work.</div></div></div>
+        <div class="tut-note"><strong>Note:</strong> Skill files include built-in review gates. Claude Code will pause at mandatory human review points and wait for your confirmation before continuing.</div>
+      </div>
+
+      <div class="tut-section" id="tut-skill-desktop">
+        <div class="tut-h2">Running a skill with Claude.ai</div>
+        <p class="prose" style="margin-bottom:1.5rem">For users who prefer a browser interface rather than the terminal. Claude.ai Projects can run skill files when you upload them as project instructions alongside your input files.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Create a new Project in Claude.ai</div><div class="tut-step-desc">At <a href="https://claude.ai" target="_blank">claude.ai</a>, click <strong>Projects → New project</strong>. Give it a name matching the task (e.g. "Thematic Analysis — Budget Documents").</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Upload the skill file as project instructions</div><div class="tut-step-desc">Download the skill file from the case study. Open <strong>Edit project instructions</strong> and paste the full contents of the skill file. This sets the operating procedure for every conversation in this project.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Upload your reference files</div><div class="tut-step-desc">Upload your codebook, schema, alias table, or any other reference file the skill requires. These will be available to Claude in every conversation within the project.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Start a conversation and paste your input</div><div class="tut-step-desc">Start a new chat. Paste your input — a document section, a dataset profile, a specification. Claude will follow the skill's procedure, pausing at review gates to ask for your confirmation.</div></div></div>
+        <div class="tut-note"><strong>Limitation:</strong> Claude.ai cannot execute code or write files to your computer. For pipeline tasks that require script generation and execution (e.g. data cleaning), use Claude Code or Gemini CLI instead.</div>
+      </div>
+
+      <div class="tut-section" id="tut-skill-gemini">
+        <div class="tut-h2">Running a skill with Gemini CLI</div>
+        <p class="prose" style="margin-bottom:1.5rem"><span class="tip">Gemini CLI<span class="tip-box"><strong>Gemini CLI</strong>Google's open-source agentic tool that runs in your terminal. Like Claude Code, it can read and write files and execute multi-step pipelines. Skill files from this site are compatible with both Claude Code and Gemini CLI.</span></span> is Google's open-source agentic terminal tool. Skill files from this site are compatible with both Claude Code and Gemini CLI — the same file works with either.</p>
+        <div class="tut-step"><div class="tut-step-num">1</div><div class="tut-step-body"><div class="tut-step-title">Install Gemini CLI</div><div class="tut-step-desc">
+          <div class="tut-code">npm install -g @google/gemini-cli</div>
+          Then run <code style="font-family:var(--m);font-size:.85em">gemini</code> and authenticate with your Google account. Full docs at <a href="https://github.com/google-gemini/gemini-cli" target="_blank">github.com/google-gemini/gemini-cli</a>.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">2</div><div class="tut-step-body"><div class="tut-step-title">Download the skill file and set up your directory</div><div class="tut-step-desc">Same as Claude Code — download the skill file and place it in a <code style="font-family:var(--m);font-size:.85em">skills/</code> folder alongside your input files.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">3</div><div class="tut-step-body"><div class="tut-step-title">Run Gemini CLI with the skill</div><div class="tut-step-desc">From your project directory:
+          <div class="tut-code">cd my-analysis
+gemini
+&gt; Read skills/thematic-analysis-skill.md and follow it.</div>
+          Gemini CLI will read the skill file and execute the pipeline. The procedure is identical to Claude Code — the skill files are tool-agnostic.</div></div></div>
+        <div class="tut-step"><div class="tut-step-num">4</div><div class="tut-step-body"><div class="tut-step-title">Check the GEMINI.md conventions</div><div class="tut-step-desc">Gemini CLI looks for a <code style="font-family:var(--m);font-size:.85em">GEMINI.md</code> file in your project root for persistent instructions. You can copy the skill file contents there if you want it to apply automatically to every session in that project.</div></div></div>
+        <div class="tut-note"><strong>Choosing between tools:</strong> Both work well. Claude Code tends to handle longer reasoning chains more reliably. Gemini CLI is free tier with a generous quota. Try both and use whichever fits your workflow.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>AI for Civic Data — An open resource for civil society organisations &amp; data practitioners</footer>
+<script>
+const GLOSSARY = {{GLOSSARY_JSON}};
+
+const CASES = {{CASES_JSON}};
+
+// ── STATE ──
+const ALL_PIPE=['define','find','get','verify','clean','analyse','present'];
+const PNAMES=['Objective','Output shape','Atomic steps','Reasoning trace','Human review'];
+
+// ── NAV ──
+function show(page){
+  ['index','detail','glossary','tutorial'].forEach(p=>{
+    document.getElementById('view-'+p).classList.toggle('active',p===page);
+  });
+  ['index','glossary','tutorial'].forEach(p=>{
+    document.getElementById('nl-'+p)?.classList.toggle('on',p===page);
+  });
+  if(page==='glossary') renderGlos();
+  if(page==='tutorial') showTut('principles');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── MAD-LIB ──
+// Map: pipeline step → materials available at that step (matching case material fields)
+const STEP_MATERIALS = {
+  define:   ["datasets to locate"],
+  find:     ["datasets to locate"],
+  verify:   ["a messy dataset","two datasets to link"],
+  clean:    ["a messy dataset","two datasets to link"],
+  analyse:  ["policy documents","a corpus of reports","a spreadsheet"],
+  present:  ["policy documents","a corpus of reports","a spreadsheet"],
+};
+const STAGE_LABELS = {
+  define:"Define",find:"Find",verify:"Verify",
+  clean:"Clean",analyse:"Analyse",present:"Present"
+};
+
+let mlStage='', mlMaterial='';
+
+function initML(){
+  // Stage dropdown — always all steps
+  const stageDD = document.getElementById('ml-stage-dd');
+  stageDD.innerHTML = Object.entries(STAGE_LABELS).map(([v,l])=>
+    `<span class="ml-option" onclick="setMLStage('${v}')">${l}</span>`
+  ).join('') + `<span class="ml-option rst" onclick="setMLStage('')">any</span>`;
+
+  rebuildMaterialDD();
+}
+
+function rebuildMaterialDD(){
+  const matDD = document.getElementById('ml-material-dd');
+  const materials = mlStage
+    ? (STEP_MATERIALS[mlStage] || [])
+    : [...new Set(CASES.map(c=>c.material))];
+  matDD.innerHTML = materials.map(m=>
+    `<span class="ml-option ${m===mlMaterial?'sel':''}" onclick="setMLMaterial('${m}')">${m}</span>`
+  ).join('') + `<span class="ml-option rst" onclick="setMLMaterial('')">any material</span>`;
+}
+
+function setMLStage(val){
+  mlStage = val;
+  if(val && STEP_MATERIALS[val] && mlMaterial && !STEP_MATERIALS[val].includes(mlMaterial)){
+    mlMaterial = '';
+  }
+  const trigger = document.querySelector('#ml-stage .ml-trigger');
+  trigger.innerHTML = (val ? STAGE_LABELS[val] : 'any') + '<span class="ml-arrow">▾</span>';
+  trigger.classList.toggle('has-value', !!val);
+  document.getElementById('ml-stage').classList.remove('open');
+  rebuildMaterialDD();
+  const matTrigger = document.querySelector('#ml-material .ml-trigger');
+  matTrigger.innerHTML = (mlMaterial || 'any material') + '<span class="ml-arrow">▾</span>';
+  matTrigger.classList.toggle('has-value', !!mlMaterial);
+  rc();
+}
+
+function setMLMaterial(val){
+  mlMaterial = val;
+  const trigger = document.querySelector('#ml-material .ml-trigger');
+  trigger.innerHTML = (val || 'any material') + '<span class="ml-arrow">▾</span>';
+  trigger.classList.toggle('has-value', !!val);
+  document.getElementById('ml-material').classList.remove('open');
+  rebuildMaterialDD();
+  rc();
+}
+
+function toggleML(blankId){
+  const blank = document.getElementById(blankId);
+  const wasOpen = blank.classList.contains('open');
+  document.querySelectorAll('.ml-blank').forEach(b=>b.classList.remove('open'));
+  if(!wasOpen) blank.classList.add('open');
+}
+
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.ml-blank')) document.querySelectorAll('.ml-blank').forEach(b=>b.classList.remove('open'));
+});
+
+// ── FILTER ──
+function mf(c){
+  if(mlStage && !c.pipelineTags.includes(mlStage)) return false;
+  if(mlMaterial && c.material !== mlMaterial) return false;
+  const q=document.getElementById('si').value.trim().toLowerCase();
+  if(q){
+    const s=(c.title+' '+c.shortDesc+' '+c.topicTags.join(' ')+' '+c.pipelineTags.join(' ')+' '+c.material).toLowerCase();
+    if(!q.split(/\s+/).every(w=>s.includes(w))) return false;
+  }
+  return true;
+}
+
+function rc(){
+  const fl=CASES.filter(mf);
+  document.getElementById('gc').innerHTML=`<strong>${fl.length}</strong> of ${CASES.length} case studies`;
+  const g=document.getElementById('cg');
+  if(!fl.length){g.innerHTML='<div class="es">No case studies match.</div>';return}
+  g.innerHTML=fl.map(c=>{
+    const pipeStrip=ALL_PIPE.map(p=>`<span class="c-pipe-step ${c.pipelineTags.includes(p)?'on-'+p:''}">${p[0].toUpperCase()+p.slice(1)}</span>`).join('');
+    const tt=c.topicTags.map(t=>`<span class="tag tt">${t}</span>`).join('');
+    return`<div class="cc" onclick="sd('${c.id}')" style="--ca:${c.mode==='pipeline'?'var(--amber)':'var(--teal)'}">
+      <div class="ctit">${c.title}</div>
+      <div class="cdesc">${c.shortDesc}</div>
+      <div class="c-pipe">${pipeStrip}</div>
+      <div class="ctags">${tt}</div>
+      <div class="cf"><span class="csk ${c.hasSkill?'y':''}">${c.hasSkill?'⬇ Skill available':'· Prompt only'}</span><span class="car">→</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── DETAIL ──
+function sd(id){
+  const c=CASES.find(x=>x.id===id); if(!c)return;
+  const pbar=ALL_PIPE.map(p=>`<div class="pstep ${c.pipelineTags.includes(p)?'on':''}">${p[0].toUpperCase()+p.slice(1)}</div>`).join('');
+  const riskB=`<div class="rc-cols">
+    <div class="rc-col naive"><div class="rc-head">Without these principles</div>
+      <div class="rc-items">${c.risks.map(r=>`<div class="rc-item"><div><strong>${r.risk.title}</strong>${r.risk.body}</div></div>`).join('')}</div></div>
+    <div class="rc-col good"><div class="rc-head">Applying the principles</div>
+      <div class="rc-items">${c.risks.map(r=>`<div class="rc-item"><div><strong>${r.good.title}</strong>${r.good.body}</div></div>`).join('')}</div></div>
+  </div>`;
+  const princH=c.principles.map((p,i)=>{
+    const ex1=p.ex1?`<div class="pa-ex"><span class="lbl">${p.ex1.lbl}</span>${p.ex1.txt}</div>`:'';
+    const ex2=p.ex2?`<div class="pa-ex" style="margin-top:.45rem"><span class="lbl">${p.ex2.lbl}</span>${p.ex2.txt}</div>`:'';
+    const warn=p.warn?`<div class="pa-warn">⚠ ${p.warn}</div>`:'';
+    return`<div class="pa" onclick="this.classList.toggle('open')">
+      <div class="pa-hd"><div class="pa-num">0${i+1}</div><div class="pa-tw"><div class="pa-name">${PNAMES[i]}</div><div class="pa-tag">${p.tag}</div></div><span class="pa-chev">▼</span></div>
+      <div class="pa-body">${p.body}${ex1}${ex2}${warn}</div>
+    </div>`;
+  }).join('');
+
+  // Artifact tabs
+  const promptPanel=`
+    <div class="artifact-panel on" id="ap-prompt">
+      <div class="prompt-usage">
+        <span class="prompt-usage-label">Use as</span>
+        <button class="usage-btn on" onclick="switchUsage(this,'pu-chat')">Chat window</button>
+        <button class="usage-btn" onclick="switchUsage(this,'pu-custom')">Custom chatbot</button>
+      </div>
+      <div class="prompt-note on" id="pu-chat">
+        Paste this prompt into any AI chat window, fill in the <span style="font-family:var(--m);color:var(--teal);font-size:.9em">[PLACEHOLDERS]</span>, and send. Works with Claude.ai, ChatGPT, or Gemini.
+        <a onclick="show('tutorial');showTut('prompt-chat')" style="cursor:pointer;margin-left:.4rem">→ Setup guide</a>
+      </div>
+      <div class="prompt-note" id="pu-custom">
+        <strong>Custom chatbot:</strong> Save this prompt as the system prompt in a Claude.ai Project (or any platform with a system prompt field). Fill in the fixed placeholders once — leave variable ones for each session.
+        <a onclick="show('tutorial');showTut('prompt-custom')" style="cursor:pointer;margin-left:.4rem">→ Setup guide</a>
+      </div>
+      <pre class="prompt-body">${c.prompt}</pre>
+      <div class="prompt-footer"><span>starter prompt · adapt before use</span><button class="cpb" onclick="cp(this)">Copy</button></div>
+    </div>`;
+
+  const skillTools=c.hasSkill?`
+    <div class="skill-intro">
+      <strong>${c.skillDesc}</strong><br>
+      Download the skill file and run it with one of the tools below. The same file works with all three.
+    </div>
+    <div class="skill-tools">
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">⌨</span><span class="skill-tool-name">Claude Code</span><span class="skill-tool-tag">Terminal · Agentic</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Install Claude Code, place the skill file in a <code>skills/</code> folder in your project, then:<div class="cmd">claude\n&gt; Read skills/${c.skillFile} and follow it.</div>Claude Code will execute the full pipeline, pausing at review gates for your confirmation. <a onclick="show('tutorial');showTut('skill-claudecode')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">🌐</span><span class="skill-tool-name">Claude.ai Projects</span><span class="skill-tool-tag">Browser · No install</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Paste the skill file contents into a Claude.ai Project's instructions. Upload your reference files to the project. Start a new conversation and paste your input — Claude will follow the skill procedure. Note: cannot execute code or write files to your computer. <a onclick="show('tutorial');showTut('skill-desktop')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">◆</span><span class="skill-tool-name">Gemini CLI</span><span class="skill-tool-tag">Terminal · Open source</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Install Gemini CLI, place the skill file in <code>skills/</code>, then:<div class="cmd">gemini\n&gt; Read skills/${c.skillFile} and follow it.</div>The same skill file works with both Claude Code and Gemini CLI. <a onclick="show('tutorial');showTut('skill-gemini')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+    </div>
+    <div class="skill-footer"><span>skill file · Claude Code · Claude.ai · Gemini CLI</span><button class="dlb" onclick="alert('Download: ${c.skillFile}')">Download skill file</button></div>`:`
+    <div style="padding:1.2rem 1rem;background:var(--bg2);font-size:.82rem;color:var(--muted);line-height:1.6">This case study is prompt-guided — no skill file is provided. Use the prompt in a chat window or as a custom chatbot base prompt.</div>`;
+
+  const artifactHTML=`
+    <div class="artifact-section">
+      <div class="artifact-tabs">
+        <button class="atab p-tab on" onclick="switchTab(this,'ap-prompt')">Prompt</button>
+        ${c.hasSkill?'<button class="atab s-tab" onclick="switchTab(this,\'ap-skill\')">Skill file</button>':''}
+      </div>
+      ${promptPanel}
+      ${c.hasSkill?`<div class="artifact-panel" id="ap-skill"><div class="skill-tools">${skillTools.replace('<div class="skill-intro">','<div class="skill-intro">').replace('<div class="skill-tools">','').replace('</div>\n    <div class="skill-footer">','</div><div class="skill-footer">').replace('<div class="skill-tools">','')}</div></div>`:''}
+    </div>`;
+
+  // cleaner skill panel render
+  const skillPanel=c.hasSkill?`<div class="artifact-panel" id="ap-skill">
+    <div class="skill-intro"><strong>${c.skillDesc}</strong><br>Download the skill file and run it with one of the tools below. The same file works with all three.</div>
+    <div class="skill-tools">
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">⌨</span><span class="skill-tool-name">Claude Code</span><span class="skill-tool-tag">Terminal · Agentic</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Install Claude Code, place the skill file in a <code>skills/</code> folder, then run:<div class="cmd">claude\n> Read skills/${c.skillFile} and follow it.</div>Claude Code executes the full pipeline, pausing at review gates. <a onclick="show('tutorial');showTut('skill-claudecode')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">🌐</span><span class="skill-tool-name">Claude.ai Projects</span><span class="skill-tool-tag">Browser · No install</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Paste the skill file into a Project's instructions. Upload reference files. Start a new chat and paste your input. <strong>Note:</strong> cannot execute code or write files to disk. <a onclick="show('tutorial');showTut('skill-desktop')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+      <div class="skill-tool" onclick="this.classList.toggle('open')">
+        <div class="skill-tool-head"><span class="skill-tool-icon">◆</span><span class="skill-tool-name">Gemini CLI</span><span class="skill-tool-tag">Terminal · Open source</span><span class="skill-tool-chev">▼</span></div>
+        <div class="skill-tool-body">Install Gemini CLI, place the skill file in <code>skills/</code>, then run:<div class="cmd">gemini\n> Read skills/${c.skillFile} and follow it.</div>The same skill file works with Claude Code and Gemini CLI. <a onclick="show('tutorial');showTut('skill-gemini')" style="cursor:pointer">→ Full setup guide</a></div>
+      </div>
+    </div>
+    <div class="skill-footer"><span>compatible with Claude Code · Claude.ai · Gemini CLI</span><button class="dlb" onclick="alert('Would download: ${c.skillFile}')">Download skill file</button></div>
+  </div>`:'';
+
+  document.getElementById('dw').innerHTML=`
+    <button class="bk" onclick="show('index')">← Back to library</button>
+    <div class="dm">
+      ${c.pipelineTags.map(p=>`<span class="tag tp-${p}">${p}</span>`).join('')}
+      ${c.topicTags.map(t=>`<span class="tag tt">${t}</span>`).join('')}
+    </div>
+    <div class="dt">${c.icon} ${c.title}</div>
+    <div class="dc">${c.context}</div>
+    <div class="div"></div>
+    <div class="sl">What goes wrong vs what the principles change<i class="sl-tip">i<span class="tip-box"><strong>Why this comparison?</strong>Every case study shows the failure modes of naive AI use alongside how the 5 principles address each one. Reading both sides helps you understand not just what to do, but why it matters.</span></i></div>
+    ${riskB}
+    <div class="div"></div>
+    <div class="sl">Pipeline position<i class="sl-tip">i<span class="tip-box"><strong>School of Data pipeline</strong>The 7-step methodology: Define → Find → Get → Verify → Clean → Analyse → Present. The highlighted steps show where this case study sits in that journey. <a href="https://civicliteraci.es/data-pipeline/" target="_blank" style="color:var(--teal)">Learn more →</a></span></i></div>
+    <div class="pbar">${pbar}</div>
+    <div class="sl">The 5 principles applied to this case<i class="sl-tip">i<span class="tip-box"><strong>The 5 principles</strong>Objective · Output shape · Atomic steps · Reasoning trace · Human review. Each accordion below explains how to apply that principle to this specific task — with examples of what goes wrong if you skip it.</span></i></div>
+    ${princH}
+    <div class="div"></div>
+    <div class="sl">Use this case study<i class="sl-tip">i<span class="tip-box"><strong>Prompt vs Skill file</strong>The <strong>Prompt</strong> is a structured text template — paste it into any AI chat window or save it as a custom chatbot. The <strong>Skill file</strong> (pipeline cases) automates the full multi-step process with Claude Code, Claude.ai, or Gemini CLI.</span></i></div>
+    <div class="artifact-section">
+      <div class="artifact-tabs">
+        <button class="atab p-tab on" id="tab-prompt" onclick="switchTab(this,'ap-prompt-${c.id}')">Prompt</button>
+        ${c.hasSkill?`<button class="atab s-tab" id="tab-skill" onclick="switchTab(this,'ap-skill-${c.id}')">Skill file</button>`:''}
+      </div>
+      <div class="artifact-panel on" id="ap-prompt-${c.id}">
+        <div class="prompt-usage">
+          <span class="prompt-usage-label">Use as</span>
+          <button class="usage-btn on" onclick="switchUsage(this,'pu-chat-${c.id}')">Chat window</button>
+          <button class="usage-btn" onclick="switchUsage(this,'pu-custom-${c.id}')">Custom chatbot</button>
+        </div>
+        <div class="prompt-note on" id="pu-chat-${c.id}">Paste this prompt into any AI chat window, fill in the <span style="font-family:var(--m);color:var(--teal);font-size:.9em">[PLACEHOLDERS]</span>, and send. Works with Claude.ai, ChatGPT, or Gemini. <a onclick="show('tutorial');showTut('prompt-chat')" style="cursor:pointer">→ Setup guide</a></div>
+        <div class="prompt-note" id="pu-custom-${c.id}"><strong>Custom chatbot:</strong> Save this as the system prompt in a Claude.ai Project or any platform with a system prompt field. Fill in fixed placeholders once — leave variable ones for each session. <a onclick="show('tutorial');showTut('prompt-custom')" style="cursor:pointer">→ Setup guide</a></div>
+        <pre class="prompt-body">${c.prompt}</pre>
+        <div class="prompt-footer"><span>adapt placeholders before use</span><button class="cpb" onclick="cp(this)">Copy</button></div>
+      </div>
+      ${skillPanel}
+    </div>`;
+
+  show('detail');
+}
+
+function switchTab(btn,panelId){
+  const wrap=btn.closest('.artifact-section');
+  wrap.querySelectorAll('.atab').forEach(t=>t.classList.remove('on'));
+  wrap.querySelectorAll('.artifact-panel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(panelId).classList.add('on');
+}
+function switchUsage(btn,noteId){
+  const wrap=btn.closest('.artifact-panel');
+  wrap.querySelectorAll('.usage-btn').forEach(b=>b.classList.remove('on'));
+  wrap.querySelectorAll('.prompt-note').forEach(n=>n.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(noteId).classList.add('on');
+}
+function cp(btn){
+  const pre=btn.closest('.artifact-panel').querySelector('.prompt-body');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1800)});
+}
+
+// ── GLOSSARY ──
+function renderGlos(filter='',letter=''){
+  const q=(filter||'').toLowerCase();
+  const entries=document.getElementById('glos-entries');
+  const groups={};
+  GLOSSARY.filter(g=>{
+    if(q&&!g.term.toLowerCase().includes(q)&&!g.def.toLowerCase().includes(q))return false;
+    if(letter&&g.term[0].toUpperCase()!==letter)return false;
+    return true;
+  }).forEach(g=>{
+    const L=g.term[0].toUpperCase();
+    if(!groups[L])groups[L]=[];
+    groups[L].push(g);
+  });
+  entries.innerHTML=Object.keys(groups).sort().map(L=>`
+    <div class="glos-group">
+      <div class="glos-letter">${L}</div>
+      ${groups[L].map(g=>`<div class="glos-entry">
+        <div class="glos-term">${g.term}</div>
+        <div class="glos-def">${g.def}</div>
+        ${g.link?`<div style="margin-top:.5rem"><a href="${g.link.url}" target="_blank" style="font-family:var(--m);font-size:.62rem;color:var(--teal);text-decoration:none;border-bottom:1px solid var(--tbd)">${g.link.label}</a></div>`:''}
+        ${g.related?.length?`<div class="glos-related">See also:${g.related.map(r=>`<span onclick="filterGlosTo('${r}')">${r}</span>`).join('')}</div>`:''}
+      </div>`).join('')}
+    </div>`).join('');
+  // alpha bar
+  const letters=[...new Set(GLOSSARY.map(g=>g.term[0].toUpperCase()))].sort();
+  document.getElementById('glos-alpha').innerHTML=letters.map(L=>
+    `<button class="alpha-btn ${L===letter?'on':''}" onclick="alphaFilter('${L}')">${L}</button>`
+  ).join('')+`<button class="alpha-btn ${!letter?'on':''}" onclick="alphaFilter('')">All</button>`;
+}
+let _glosLetter='';
+function filterGlos(){renderGlos(document.getElementById('gsi').value,_glosLetter)}
+function alphaFilter(L){_glosLetter=L;renderGlos(document.getElementById('gsi').value,L)}
+function filterGlosTo(term){
+  document.getElementById('gsi').value=term;
+  _glosLetter='';
+  renderGlos(term,'');
+}
+
+// ── TUTORIAL ──
+function showTut(id){
+  document.querySelectorAll('.tut-section').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tut-nav-item').forEach(n=>n.classList.remove('on'));
+  document.getElementById('tut-'+id)?.classList.add('on');
+  document.querySelectorAll('.tut-nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')?.includes(id))n.classList.add('on');
+  });
+}
+
+// ── INIT ──
+rc();
+renderGlos();
+initML();
+</script>
+</body>
+</html>

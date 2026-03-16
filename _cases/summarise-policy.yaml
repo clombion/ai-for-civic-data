@@ -1,0 +1,109 @@
+id: summarise-policy
+title: Summarising Policy Documents
+shortDesc: Extract key commitments, obligations and recommendations from lengthy government reports and policy papers.
+context: >
+  Civil society organisations routinely monitor policy documents — government
+  strategies, budget frameworks, legislative proposals — but their volume and
+  density makes systematic review difficult. The question for any AI-assisted
+  task is: what precisely do I want, what should the result look like, and how
+  will I know if it is wrong?
+mode: prompt-guided
+pipelineTags: [analyse, present]
+topicTags: [policy, documents, research]
+material: policy documents
+hasSkill: false
+
+risks:
+  - risk:
+      title: Invented commitments
+      body: AI produces commitments that sound plausible but are not in the document — especially in dense or ambiguous sections.
+    good:
+      title: Mandatory source reference per item
+      body: Every item must carry a paragraph reference. Any extraction without one is rejected, making invention impossible to hide.
+  - risk:
+      title: Invisible confidence
+      body: AI mixes direct quotes, paraphrases, and inferences with no signal about which is which.
+    good:
+      title: Explicit confidence field
+      body: Each item carries a direct_quote / paraphrase / inferred label. Inferred items are flagged for mandatory human review.
+  - risk:
+      title: AI-counted totals
+      body: "'This document contains 14 commitments' — AI counts are unreliable and may duplicate, miss, or miscategorise silently."
+    good:
+      title: Humans count from validated items
+      body: Counts are computed after human validation of individual items. AI never produces aggregate numbers.
+  - risk:
+      title: Inconsistent structure across documents
+      body: Each open-ended run produces a different narrative shape, making corpus-level comparison impossible.
+    good:
+      title: Schema defined once, applied everywhere
+      body: The extraction schema — categories, field names, format — is defined by the analyst and applied identically to every document.
+
+principles:
+  - name: Objective
+    tag: What precisely are you trying to produce?
+    body: Not "summarise this report" but "extract all commitments made by the national government on extractives revenue transparency, with the paragraph number of each." The precision of your objective determines the quality of the output. A vague objective produces a plausible-sounding summary that may miss everything important.
+    ex1:
+      lbl: Weak objective
+      txt: Summarise the key points of this policy document
+    ex2:
+      lbl: Strong objective
+      txt: "Extract every commitment in this document that names a specific actor, obligation, and timeframe — with the paragraph reference for each"
+
+  - name: Output shape
+    tag: What does the result look like?
+    body: Provide a template — a table with fixed columns, a JSON schema, or a numbered list with named fields. Without a specified shape, AI produces narrative summaries that are hard to compare across documents. The shape is also your verification checklist — each field you define is something you will check.
+    ex1:
+      lbl: Output shape to specify
+      txt: "category | description | section_ref | confidence | note"
+    warn: If AI produces a shape you did not specify, the objective was underspecified — ask again with the format requirement explicit.
+
+  - name: Atomic steps
+    tag: Process section by section, not all at once
+    body: Ask AI to process one section of the document at a time. Each section is one unit of work — AI identifies relevant content, extracts items against the schema, and flags anything uncertain. Compile only after all sections are processed.
+    ex1:
+      lbl: Atomic step instruction
+      txt: "Process only section 3.2. Extract items matching the schema. Do not refer to other sections."
+
+  - name: Reasoning trace
+    tag: Require AI to explain every interpretive choice
+    body: Ask AI to add a confidence field and a note field to every item. The note is where AI explains any interpretive choice — why it classified something as a commitment rather than an aspiration. Without this, you see only the conclusion, not the reasoning.
+    ex1:
+      lbl: Trace instruction
+      txt: "For any item you are uncertain about, set confidence to \"inferred\" and explain your reasoning in the note field."
+    warn: Any item marked "inferred" must be human-reviewed before it enters the output.
+
+  - name: Human review
+    tag: Design the verification before you run anything
+    body: Define your review process before starting. Every numeric value (dates, budgets, percentages) is manually verified against the source text. All inferred-confidence items are reviewed. A 20% random spot-check of direct-quote items is run.
+    ex1:
+      lbl: Review checklist
+      txt: "1. Verify all [VERIFY] items against source text\n2. Review all inferred-confidence items\n3. Spot-check 20% of direct-quote items\n4. Confirm all section references are correct"
+
+prompt: |
+  You are an extraction assistant. Do not summarise freely — fill the schema only.
+
+  # Extraction schema (fixed — do not invent new categories)
+  COMMITMENT — An explicit pledge or obligation made by an actor
+  ACTOR — The entity responsible
+  TIMELINE — Any deadline or timeframe
+  MONITORING — Any mechanism for tracking progress
+  FINANCING — Any budget, funding, or resource commitment
+
+  # Output — one JSON object per line
+  {
+    "category": "<one of the five above>",
+    "description": "<plain language description>",
+    "section_ref": "<paragraph or section number — REQUIRED>",
+    "confidence": "direct_quote | paraphrase | inferred",
+    "note": "<explain any interpretive choice, or null>"
+  }
+
+  # Rules
+  — Never use a category not listed above
+  — Never leave section_ref empty
+  — Mark any number (date, budget, %) with [VERIFY] in the note field
+  — Set confidence to "inferred" if you are not quoting or paraphrasing directly
+
+  # Section to process
+  [PASTE SECTION TEXT HERE]
